@@ -40,6 +40,12 @@ def create_project(name: str) -> tuple[int, str]:
         raise BadRequest("project name must not be empty")
     pid = db.create_project(name)
     return (pid, name)
+def rename_project(pid: int, name: str) -> tuple[int, str]:
+    get_project(pid)
+    if not name.strip():
+        raise BadRequest("project name must not be empty")
+    db.update_project(pid, name)
+    return (pid, name)
 
 
 def delete_project(pid: int) -> None:

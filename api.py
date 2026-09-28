@@ -140,6 +140,11 @@ def get_project(pid: int):
 def delete_project(pid: int):
     services.delete_project(pid)
 
+@app.patch("/projects/{pid}", response_model=ProjectOut)
+def patch_project(pid: int, payload: ProjectIn):
+    pid, name = services.rename_project(pid, payload.name)
+    return ProjectOut(id=pid, name=name)
+
 
 # ---------------------------------------------------------------------------
 # tasks

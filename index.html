@@ -31,62 +31,38 @@
     --modal-shadow: 0 10px 30px rgba(0,0,0,0.18);
     --popover-shadow: 0 6px 16px rgba(0,0,0,0.14);
     --ghost-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    --dep-self: #ffffff;
+    --dep-up: #f0c674;
+    --dep-down: #9ad19a;
     --mono: "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #1a1a1d;
-      --panel: #232327;
-      --panel-2: #2a2a2f;
-      --toolbar: #26262a;
-      --border: #3a3a40;
-      --border-2: #2e2e34;
-      --text: #e6e6ea;
-      --muted: #8a8a93;
-      --accent: #5a8fd4;
-      --accent-h: #4a7ec3;
-      --danger: #e07a7a;
-      --input-bg: #1a1a1d;
-      --input-disabled: #2a2a2f;
-      --hover-bg: #2a2a2f;
+      --bg: #1a1a1d; --panel: #232327; --panel-2: #2a2a2f; --toolbar: #26262a;
+      --border: #3a3a40; --border-2: #2e2e34; --text: #e6e6ea; --muted: #8a8a93;
+      --accent: #5a8fd4; --accent-h: #4a7ec3; --danger: #e07a7a;
+      --input-bg: #1a1a1d; --input-disabled: #2a2a2f; --hover-bg: #2a2a2f;
       --gline-major: #333338;
-      --task-border: rgba(0,0,0,0.35);
-      --task-outline: rgba(255,255,255,0.45);
-      --violation: #e57373;
-      --violation-inset: #232327;
-      --menu-btn-bg: rgba(0,0,0,0.45);
-      --menu-btn-bg-h: rgba(0,0,0,0.65);
+      --task-border: rgba(0,0,0,0.35); --task-outline: rgba(255,255,255,0.45);
+      --violation: #e57373; --violation-inset: #232327;
+      --menu-btn-bg: rgba(0,0,0,0.45); --menu-btn-bg-h: rgba(0,0,0,0.65);
       --modal-backdrop: rgba(0,0,0,0.6);
       --modal-shadow: 0 10px 30px rgba(0,0,0,0.55);
       --popover-shadow: 0 6px 16px rgba(0,0,0,0.5);
       --ghost-shadow: 0 8px 20px rgba(0,0,0,0.6);
     }
   }
-
   :root[data-theme="dark"] {
-    --bg: #1a1a1d;
-    --panel: #232327;
-    --panel-2: #2a2a2f;
-    --toolbar: #26262a;
-    --border: #3a3a40;
-    --border-2: #2e2e34;
-    --text: #e6e6ea;
-    --muted: #8a8a93;
-    --accent: #5a8fd4;
-    --accent-h: #4a7ec3;
-    --danger: #e07a7a;
-    --input-bg: #1a1a1d;
-    --input-disabled: #2a2a2f;
-    --hover-bg: #2a2a2f;
+    --bg: #1a1a1d; --panel: #232327; --panel-2: #2a2a2f; --toolbar: #26262a;
+    --border: #3a3a40; --border-2: #2e2e34; --text: #e6e6ea; --muted: #8a8a93;
+    --accent: #5a8fd4; --accent-h: #4a7ec3; --danger: #e07a7a;
+    --input-bg: #1a1a1d; --input-disabled: #2a2a2f; --hover-bg: #2a2a2f;
     --gline-major: #333338;
-    --task-border: rgba(0,0,0,0.35);
-    --task-outline: rgba(255,255,255,0.45);
-    --violation: #e57373;
-    --violation-inset: #232327;
-    --menu-btn-bg: rgba(0,0,0,0.45);
-    --menu-btn-bg-h: rgba(0,0,0,0.65);
+    --task-border: rgba(0,0,0,0.35); --task-outline: rgba(255,255,255,0.45);
+    --violation: #e57373; --violation-inset: #232327;
+    --menu-btn-bg: rgba(0,0,0,0.45); --menu-btn-bg-h: rgba(0,0,0,0.65);
     --modal-backdrop: rgba(0,0,0,0.6);
     --modal-shadow: 0 10px 30px rgba(0,0,0,0.55);
     --popover-shadow: 0 6px 16px rgba(0,0,0,0.5);
@@ -96,393 +72,210 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
-    margin: 0;
-    font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--text);
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    margin: 0; font-family: var(--sans); font-size: 14px; line-height: 1.4;
+    color: var(--text); background: var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
   }
   button { font: inherit; }
 
   /* ---------- toolbar ---------- */
   .toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--toolbar);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; background: var(--toolbar);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    flex-wrap: wrap;
   }
-  .toolbar .sep {
-    width: 1px;
-    height: 24px;
-    background: var(--border);
-    margin: 0 4px;
-  }
+  .toolbar .sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
   .toolbar select,
-  .toolbar input[type=date],
   .toolbar button {
-    font: inherit;
-    font-size: 13px;
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    background: var(--panel);
-    color: var(--text);
-    cursor: pointer;
-    height: 30px;
-    line-height: 1;
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 2px;
+    background: var(--panel); color: var(--text);
+    cursor: pointer; height: 30px; line-height: 1;
   }
   .toolbar select { color-scheme: light dark; }
   .toolbar button:hover { background: var(--panel-2); }
-  .toolbar button.primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
+  .toolbar button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .toolbar button.primary:hover { background: var(--accent-h); }
-  .toolbar button.icon {
-    width: 30px;
-    padding: 0;
-    font-family: var(--mono);
-    font-size: 14px;
-  }
+  .toolbar button.icon { width: 30px; padding: 0; font-family: var(--mono); font-size: 14px; }
+  .toolbar button.icon.active { background: var(--panel-2); color: var(--accent); border-color: var(--accent); }
   .toolbar .spacer { flex: 1; }
   .toolbar .status {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    padding-right: 4px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted); padding-right: 4px;
   }
   .toolbar .status .num { color: var(--text); }
   .toolbar .status .bad { color: var(--danger); }
 
   .day-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
-    background: var(--panel-2);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; background: var(--panel-2);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    flex-wrap: wrap;
   }
   .day-bar input[type=date] {
-    font: inherit;
-    font-size: 13px;
-    font-family: var(--mono);
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    background: var(--panel);
-    color: var(--text);
-    height: 30px;
+    font: inherit; font-size: 13px; font-family: var(--mono);
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: 2px;
+    background: var(--panel); color: var(--text); height: 30px;
     color-scheme: light dark;
   }
   .day-bar button {
-    font: inherit;
-    font-size: 13px;
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    background: var(--panel);
-    color: var(--text);
-    cursor: pointer;
-    height: 30px;
-    line-height: 1;
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 2px;
+    background: var(--panel); color: var(--text);
+    cursor: pointer; height: 30px; line-height: 1;
   }
-  .day-bar button.icon {
-    width: 30px;
-    padding: 0;
-    font-family: var(--mono);
-  }
+  .day-bar button.icon { width: 30px; padding: 0; font-family: var(--mono); }
   .day-bar button:hover { background: var(--panel-2); }
-  .day-bar .weekday {
-    font-size: 12px;
-    color: var(--muted);
-    padding-left: 4px;
+  .day-bar .weekday { font-size: 12px; color: var(--muted); padding-left: 4px; }
+  .day-bar .spacer { flex: 1; }
+  .day-bar .zoom-group { display: flex; gap: 4px; align-items: center; }
+  .day-bar .zoom-level {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    padding: 0 6px; min-width: 44px; text-align: center;
   }
 
   /* ---------- layout ---------- */
-  .content {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
+  .content { display: flex; flex: 1; min-height: 0; }
 
   /* ---------- timeline ---------- */
   .timeline-panel {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--panel);
-    overflow: hidden;
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    background: var(--panel); overflow: hidden;
   }
   .timeline-scroll {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    user-select: none;
+    flex: 1; overflow-x: auto; overflow-y: hidden;
+    position: relative; user-select: none;
   }
-  .timeline-inner {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-  }
+  .timeline-scroll::-webkit-scrollbar { height: 10px; }
+  .timeline-scroll::-webkit-scrollbar-track { background: var(--panel-2); }
+  .timeline-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  .timeline-scroll::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  .timeline-inner { height: 100%; display: flex; flex-direction: column; }
   .ruler {
-    height: 28px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel-2);
-    position: relative;
-    flex-shrink: 0;
+    height: 28px; border-bottom: 1px solid var(--border);
+    background: var(--panel-2); position: relative; flex-shrink: 0;
   }
   .ruler .tick {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    padding-left: 4px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
+    position: absolute; top: 0; height: 100%; padding-left: 4px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
     border-left: 1px solid var(--border-2);
-    display: flex;
-    align-items: center;
-    pointer-events: none;
+    display: flex; align-items: center; pointer-events: none;
   }
   .ruler .tick.major { color: var(--text); border-left-color: var(--border); }
 
-  .tracks-wrap {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
-  .grid {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .grid .gline {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--border-2);
-  }
+  .tracks-wrap { flex: 1; position: relative; overflow: hidden; }
+  .grid { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .grid .gline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-2); }
   .grid .gline.major { background: var(--gline-major); }
-  .grid .now {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: #c14343;
-  }
+  .grid .now { position: absolute; top: 0; bottom: 0; width: 1px; background: #c14343; }
   .grid .now::before {
-    content: "";
-    position: absolute;
-    top: -4px;
-    left: -3px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #c14343;
+    content: ""; position: absolute; top: -4px; left: -3px;
+    width: 7px; height: 7px; border-radius: 50%; background: #c14343;
   }
-  .tracks {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-  .track {
-    position: absolute;
-    left: 0;
-    right: 0;
-    border-bottom: 1px solid var(--border-2);
-  }
+  .tracks { position: absolute; inset: 0; z-index: 1; }
+  .track { position: absolute; left: 0; right: 0; border-bottom: 1px solid var(--border-2); }
 
   .task {
-    position: absolute;
-    border-radius: 3px;
-    color: #fff;
-    overflow: hidden;
-    cursor: grab;
-    user-select: none;
-    padding: 4px 7px;
-    border: 1px solid var(--task-border);
-    touch-action: none;
-    font-size: 12px;
+    position: absolute; border-radius: 3px; color: #fff; overflow: hidden;
+    cursor: grab; user-select: none; padding: 4px 7px;
+    border: 1px solid var(--task-border); touch-action: none; font-size: 12px;
   }
   .task:hover { outline: 1px solid var(--task-outline); }
   .task.violation { border-color: var(--violation); box-shadow: inset 0 0 0 1px var(--violation-inset); }
+  .task.dep-self { outline: 2px solid var(--dep-self); outline-offset: 0; z-index: 2; }
+  .task.dep-upstream { outline: 2px solid var(--dep-up); outline-offset: 1px; z-index: 2; }
+  .task.dep-downstream { outline: 2px dashed var(--dep-down); outline-offset: 1px; z-index: 2; }
   .task .task-name {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.25;
+    font-weight: 600; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; line-height: 1.25;
   }
   .task .task-time {
-    font-family: var(--mono);
-    font-size: 11px;
-    opacity: 0.9;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.25;
+    font-family: var(--mono); font-size: 11px; opacity: 0.9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25;
   }
   .task .menu-btn {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 18px;
-    height: 18px;
-    border-radius: 2px;
-    background: var(--menu-btn-bg);
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    opacity: 0;
-    padding: 0;
-    font-size: 11px;
-    line-height: 16px;
-    font-family: var(--mono);
+    position: absolute; top: 3px; right: 3px; width: 18px; height: 18px;
+    border-radius: 2px; background: var(--menu-btn-bg); color: #fff;
+    border: none; cursor: pointer; opacity: 0; padding: 0;
+    font-size: 11px; line-height: 16px; font-family: var(--mono);
   }
   .task:hover .menu-btn { opacity: 1; }
   .task .menu-btn:hover { background: var(--menu-btn-bg-h); }
+  .task .resize-handle {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 7px;
+    cursor: ew-resize; z-index: 3;
+    background: transparent; transition: background 0.1s;
+  }
+  .task:hover .resize-handle { background: linear-gradient(to right, transparent, rgba(255,255,255,0.35)); }
+  .task .resize-handle:hover { background: linear-gradient(to right, transparent, rgba(255,255,255,0.7)); }
 
   /* ---------- sidebar ---------- */
   .sidebar {
-    width: 300px;
-    border-left: 1px solid var(--border);
-    background: var(--panel-2);
-    display: flex;
-    flex-direction: column;
+    width: 300px; border-left: 1px solid var(--border);
+    background: var(--panel-2); display: flex; flex-direction: column;
     flex-shrink: 0;
   }
+  .sidebar.hidden { display: none; }
   .sidebar-head {
-    padding: 10px 12px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
+    padding: 10px 12px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+    border-bottom: 1px solid var(--border); background: var(--panel);
   }
   .sidebar-head .count {
-    font-family: var(--mono);
-    color: var(--text);
-    text-transform: none;
-    letter-spacing: 0;
-    margin-left: 4px;
+    font-family: var(--mono); color: var(--text);
+    text-transform: none; letter-spacing: 0; margin-left: 4px;
   }
-  .unscheduled-list {
-    flex: 1;
-    overflow-y: auto;
-  }
+  .unscheduled-list { flex: 1; overflow-y: auto; }
   .u-item {
-    position: relative;
-    padding: 8px 12px 8px 16px;
+    position: relative; padding: 8px 12px 8px 16px;
     border-bottom: 1px solid var(--border-2);
-    cursor: grab;
-    user-select: none;
-    background: var(--panel);
+    cursor: grab; user-select: none; background: var(--panel);
     touch-action: none;
   }
   .u-item:hover { background: var(--hover-bg); }
-  .u-item .u-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-  }
+  .u-item .u-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
   .u-item .u-name {
-    font-weight: 600;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 24px;
+    font-weight: 600; font-size: 13px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; padding-right: 24px;
   }
   .u-item .u-meta {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 2px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px;
   }
   .u-item .menu-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 20px;
-    height: 20px;
-    border-radius: 2px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    opacity: 0;
-    color: var(--muted);
-    padding: 0;
-    font-size: 12px;
-    font-family: var(--mono);
-    line-height: 18px;
+    position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;
+    border-radius: 2px; background: transparent; border: none;
+    cursor: pointer; opacity: 0; color: var(--muted); padding: 0;
+    font-size: 12px; font-family: var(--mono); line-height: 18px;
   }
   .u-item:hover .menu-btn { opacity: 1; }
   .u-item .menu-btn:hover { background: var(--border-2); color: var(--text); }
   .empty {
-    padding: 18px 14px;
-    color: var(--muted);
-    font-size: 13px;
-    text-align: center;
+    padding: 18px 14px; color: var(--muted); font-size: 13px; text-align: center;
   }
 
   /* ---------- modal ---------- */
   .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: var(--modal-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0; background: var(--modal-backdrop);
+    display: flex; align-items: center; justify-content: center;
     z-index: 1000;
   }
   .modal {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 0;
-    min-width: 380px;
-    max-width: 520px;
-    min-height: 320px;
-    box-shadow: var(--modal-shadow);
-    font-size: 14px;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 3px; padding: 0; min-width: 380px; max-width: 520px;
+    min-height: 320px; box-shadow: var(--modal-shadow);
+    font-size: 14px; color: var(--text);
+    display: flex; flex-direction: column;
   }
   .modal .m-head {
-    padding: 11px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel-2);
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+    background: var(--panel-2); font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
   }
   .modal .m-body { padding: 16px; }
   .modal label {
-    display: block;
-    margin-bottom: 12px;
-    font-size: 12px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    display: block; margin-bottom: 12px; font-size: 12px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
   }
   .modal label > span { display: block; margin-bottom: 4px; }
   .modal input[type=text],
@@ -491,17 +284,10 @@
   .modal input[type=time],
   .modal input[type=datetime-local],
   .modal select {
-    width: 100%;
-    font: inherit;
-    font-size: 14px;
-    padding: 6px 9px;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    background: var(--input-bg);
-    color: var(--text);
-    text-transform: none;
-    letter-spacing: 0;
-    font-family: var(--sans);
+    width: 100%; font: inherit; font-size: 14px; padding: 6px 9px;
+    border: 1px solid var(--border); border-radius: 2px;
+    background: var(--input-bg); color: var(--text);
+    text-transform: none; letter-spacing: 0; font-family: var(--sans);
     color-scheme: light dark;
   }
   .modal input[type=date],
@@ -512,150 +298,120 @@
   .modal .row { display: flex; gap: 12px; }
   .modal .row > * { flex: 1; }
   .modal .m-foot {
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    background: var(--panel-2);
-    margin-top: auto;
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px; background: var(--panel-2); margin-top: auto;
   }
   .modal button {
-    font-size: 13px;
-    padding: 6px 14px;
-    border-radius: 2px;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    cursor: pointer;
-    height: 30px;
+    font-size: 13px; padding: 6px 14px; border-radius: 2px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); cursor: pointer; height: 30px;
   }
   .modal button:hover { background: var(--panel-2); }
-  .modal button.primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
+  .modal button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .modal button.primary:hover { background: var(--accent-h); }
   .modal button.icon-btn {
-    width: 30px;
-    padding: 0;
-    font-family: var(--mono);
-    font-size: 15px;
-    line-height: 1;
+    width: 30px; padding: 0; font-family: var(--mono);
+    font-size: 15px; line-height: 1;
   }
+  .modal button.icon-btn.danger { color: var(--danger); }
   .modal dl {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 8px 14px;
-    margin: 0;
-    font-size: 13px;
+    display: grid; grid-template-columns: 140px 1fr;
+    gap: 8px 14px; margin: 0; font-size: 13px;
   }
   .modal dt {
-    color: var(--muted);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding-top: 1px;
+    color: var(--muted); font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.05em; padding-top: 1px;
   }
   .modal dd { margin: 0; font-family: var(--mono); font-size: 13px; word-break: break-word; }
   .modal dd.plain { font-family: var(--sans); }
   .modal h3.sec {
-    margin: 16px 0 8px;
-    font-size: 12px;
-    color: var(--danger);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    border-top: 1px solid var(--border-2);
-    padding-top: 12px;
+    margin: 16px 0 8px; font-size: 12px; color: var(--danger);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border-top: 1px solid var(--border-2); padding-top: 12px;
   }
-  .modal ul.viol {
-    margin: 0;
-    padding-left: 18px;
-    font-size: 13px;
-    color: var(--danger);
-  }
+  .modal ul.viol { margin: 0; padding-left: 18px; font-size: 13px; color: var(--danger); }
 
-  /* ---------- deps list ---------- */
   .deps-list {
-    max-height: 150px;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    background: var(--input-bg);
-    padding: 5px 9px;
-    margin-bottom: 12px;
-    font-size: 13px;
+    max-height: 150px; overflow-y: auto; border: 1px solid var(--border);
+    border-radius: 2px; background: var(--input-bg); padding: 5px 9px;
+    margin-bottom: 12px; font-size: 13px;
   }
   .deps-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 3px;
-    cursor: pointer;
-    border-radius: 2px;
-    color: var(--text);
-    font-size: 13px;
+    display: flex; align-items: center; gap: 8px; padding: 4px 3px;
+    cursor: pointer; border-radius: 2px; color: var(--text); font-size: 13px;
   }
   .deps-item:hover { background: var(--panel-2); }
   .deps-item input { margin: 0; cursor: pointer; accent-color: var(--accent); }
-  .deps-empty {
-    color: var(--muted);
-    font-size: 12px;
-    padding: 4px 3px;
-  }
+  .deps-empty { color: var(--muted); font-size: 12px; padding: 4px 3px; }
   .deps-note {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: none;
-    letter-spacing: 0;
-    margin-top: -8px;
-    margin-bottom: 12px;
+    font-size: 11px; color: var(--muted); text-transform: none;
+    letter-spacing: 0; margin-top: -8px; margin-bottom: 12px;
   }
+
+  /* ---------- project management ---------- */
+  .proj-list { display: flex; flex-direction: column; gap: 2px; }
+  .proj-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 2px; background: var(--input-bg);
+  }
+  .proj-item .proj-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .proj-item input.proj-name-input {
+    flex: 1; font: inherit; font-size: 14px; padding: 4px 6px;
+    border: 1px solid var(--accent); border-radius: 2px;
+    background: var(--input-bg); color: var(--text);
+  }
+  .proj-item .proj-count {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    white-space: nowrap;
+  }
+  .proj-new-form {
+    display: flex; gap: 8px; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid var(--border-2);
+  }
+  .proj-new-form input {
+    flex: 1; font: inherit; font-size: 14px; padding: 6px 9px;
+    border: 1px solid var(--border); border-radius: 2px;
+    background: var(--input-bg); color: var(--text);
+  }
+  .proj-new-form button {
+    font-size: 13px; padding: 6px 14px; border-radius: 2px;
+    border: 1px solid var(--accent); background: var(--accent);
+    color: #fff; cursor: pointer; height: 30px;
+  }
+  .proj-new-form button:hover { background: var(--accent-h); }
 
   /* ---------- popover ---------- */
   .popover {
-    position: fixed;
-    z-index: 2000;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    box-shadow: var(--popover-shadow);
-    padding: 3px;
-    min-width: 150px;
+    position: fixed; z-index: 2000; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 2px;
+    box-shadow: var(--popover-shadow); padding: 3px; min-width: 150px;
   }
   .popover button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 6px 12px;
-    border: none;
-    background: transparent;
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: 2px;
-    color: var(--text);
+    display: block; width: 100%; text-align: left; padding: 6px 12px;
+    border: none; background: transparent; font: inherit; font-size: 13px;
+    cursor: pointer; border-radius: 2px; color: var(--text);
   }
   .popover button:hover { background: var(--panel-2); }
   .popover button.danger { color: var(--danger); }
-  .popover .sep {
-    height: 1px;
-    background: var(--border-2);
-    margin: 3px 0;
-  }
+  .popover .sep { height: 1px; background: var(--border-2); margin: 3px 0; }
 
-  /* ---------- drag ghost ---------- */
   .drag-ghost {
-    position: fixed !important;
-    pointer-events: none;
-    z-index: 1500;
-    opacity: 0.85;
-    box-shadow: var(--ghost-shadow);
+    position: fixed !important; pointer-events: none; z-index: 1500;
+    opacity: 0.85; box-shadow: var(--ghost-shadow);
   }
   body.dragging { cursor: grabbing; }
   body.dragging * { cursor: grabbing !important; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 800px) {
+    .toolbar { padding: 6px 10px; gap: 6px; }
+    .toolbar .status { order: 99; flex-basis: 100%; padding-left: 0; }
+    .sidebar { width: 240px; }
+    .modal { min-width: 320px; max-width: calc(100vw - 24px); }
+    .day-bar .zoom-level { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -665,8 +421,11 @@
   <span class="sep"></span>
   <button id="btn-add" class="primary">New task</button>
   <button id="btn-autofill" title="Schedule all unscheduled tasks in current project">Auto-fill</button>
+  <button id="btn-projects" title="Manage projects">Projects</button>
   <span class="spacer"></span>
   <span id="status" class="status"></span>
+  <button id="btn-undo" class="icon" title="Undo (Ctrl+Z)" disabled>&#x21B6;</button>
+  <button id="btn-sidebar" class="icon" title="Toggle sidebar">&#x2630;</button>
   <button id="theme-toggle" class="icon" title="Toggle theme"></button>
 </div>
 
@@ -676,12 +435,19 @@
   <button class="icon" id="day-next" title="Next day">&gt;</button>
   <button id="day-today">Today</button>
   <span class="weekday" id="day-weekday"></span>
+  <span class="spacer"></span>
+  <div class="zoom-group">
+    <button class="icon" id="zoom-out" title="Zoom out">&minus;</button>
+    <span class="zoom-level" id="zoom-level">100%</span>
+    <button class="icon" id="zoom-in" title="Zoom in">+</button>
+    <button id="zoom-fit" title="Fit full day">Fit</button>
+  </div>
 </div>
 
 <div class="content">
   <div class="timeline-panel">
     <div class="timeline-scroll" id="timeline-scroll">
-      <div class="timeline-inner">
+      <div class="timeline-inner" id="timeline-inner">
         <div class="ruler" id="ruler"></div>
         <div class="tracks-wrap">
           <div class="grid" id="grid"></div>
@@ -690,7 +456,7 @@
       </div>
     </div>
   </div>
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">Not scheduled <span class="count" id="u-count">0</span></div>
     <div class="unscheduled-list" id="unscheduled-list"></div>
   </aside>
@@ -703,6 +469,7 @@
 "use strict";
 const API = "http://localhost:8000";
 const DAY_MS = 24 * 3600 * 1000;
+const MIN_PX_PER_MIN = 0.7;
 
 const PALETTE = [
   "#5b7a99", "#a5764f", "#7d8f5c", "#8f5c6e", "#5c7d7d",
@@ -726,15 +493,13 @@ function getEffectiveTheme() {
   if (explicit === "dark" || explicit === "light") return explicit;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
-
 function updateThemeIcon() {
   const btn = document.getElementById("theme-toggle");
   if (!btn) return;
-  const effective = getEffectiveTheme();
-  btn.textContent = effective === "dark" ? "\u2600" : "\u263E";
-  btn.title = effective === "dark" ? "Switch to light theme" : "Switch to dark theme";
+  const eff = getEffectiveTheme();
+  btn.textContent = eff === "dark" ? "\u2600" : "\u263E";
+  btn.title = eff === "dark" ? "Switch to light theme" : "Switch to dark theme";
 }
-
 function initTheme() {
   let stored = null;
   try { stored = localStorage.getItem("theme"); } catch (_) {}
@@ -743,16 +508,107 @@ function initTheme() {
   }
   updateThemeIcon();
 }
-
 function toggleTheme() {
-  const current = getEffectiveTheme();
-  const next = current === "dark" ? "light" : "dark";
+  const next = getEffectiveTheme() === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
   try { localStorage.setItem("theme", next); } catch (_) {}
   updateThemeIcon();
 }
-
 initTheme();
+
+/* ---------- undo history ---------- */
+
+const MAX_HISTORY = 50;
+const history = [];
+
+function snapSchedule() {
+  return state.schedule.map(s => ({ task_id: s.task_id, start: s.start }));
+}
+function pushUndo() {
+  history.push(snapSchedule());
+  if (history.length > MAX_HISTORY) history.shift();
+  updateUndoBtn();
+}
+function updateUndoBtn() {
+  const btn = document.getElementById("btn-undo");
+  if (!btn) return;
+  btn.disabled = history.length === 0;
+}
+async function undo() {
+  if (history.length === 0) return;
+  const snap = history.pop();
+  updateUndoBtn();
+  const cur = new Map(state.schedule.map(s => [s.task_id, s.start]));
+  const want = new Map(snap.map(s => [s.task_id, s.start]));
+
+  try {
+    for (const [tid, start] of cur) {
+      if (!want.has(tid)) {
+        await api("/tasks/" + tid + "/schedule", { method: "DELETE" });
+      } else if (want.get(tid) !== start) {
+        await api("/tasks/" + tid + "/schedule", {
+          method: "PUT", body: JSON.stringify({ start: want.get(tid) }),
+        });
+      }
+    }
+    for (const [tid, start] of want) {
+      if (!cur.has(tid)) {
+        await api("/tasks/" + tid + "/schedule", {
+          method: "PUT", body: JSON.stringify({ start }),
+        });
+      }
+    }
+  } catch (err) {
+    console.error("undo failed mid-way:", err);
+  }
+  await reload();
+}
+
+/* ---------- zoom ---------- */
+
+let zoom = 1;
+let zoomInitialized = false;
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 12;
+
+function clampZoom(z) { return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)); }
+function updateZoomLabel() {
+  const el = document.getElementById("zoom-level");
+  if (el) el.textContent = Math.round(zoom * 100) + "%";
+}
+function setZoom(z) {
+  zoom = clampZoom(z);
+  updateZoomLabel();
+  renderTimeline();
+}
+function resetZoom() { setZoom(1); }
+
+/* ---------- sidebar ---------- */
+
+let sidebarCollapsed = false;
+function initSidebar() {
+  try {
+    const stored = localStorage.getItem("sidebar-collapsed");
+    if (stored !== null) sidebarCollapsed = stored === "1";
+    else sidebarCollapsed = window.matchMedia("(max-width: 800px)").matches;
+  } catch (_) {
+    sidebarCollapsed = false;
+  }
+  applySidebar();
+}
+function applySidebar() {
+  const sb = document.getElementById("sidebar");
+  const btn = document.getElementById("btn-sidebar");
+  if (!sb) return;
+  sb.classList.toggle("hidden", sidebarCollapsed);
+  if (btn) btn.classList.toggle("active", !sidebarCollapsed);
+  setTimeout(() => { renderTimeline(); }, 0);
+}
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  try { localStorage.setItem("sidebar-collapsed", sidebarCollapsed ? "1" : "0"); } catch (_) {}
+  applySidebar();
+}
 
 /* ---------- API ---------- */
 
@@ -764,9 +620,7 @@ async function api(path, init) {
       headers: { "Content-Type": "application/json",
                  ...(init && init.headers ? init.headers : {}) },
     });
-  } catch (e) {
-    throw new Error("Cannot reach API at " + API);
-  }
+  } catch (e) { throw new Error("Cannot reach API at " + API); }
   if (!r.ok) {
     let detail;
     try { detail = (await r.json()).detail; } catch (_) { detail = r.statusText; }
@@ -851,13 +705,10 @@ function isSameDay(a, b) {
          a.getDate() === b.getDate();
 }
 
-/* ---------- filters ---------- */
-
 function dayBounds() {
   const s = state.dayStart.getTime();
   return { startMs: s, endMs: s + DAY_MS };
 }
-
 function tasksInDay() {
   const { startMs, endMs } = dayBounds();
   const byId = new Map(state.tasks.map(t => [t.id, t]));
@@ -875,13 +726,11 @@ function tasksInDay() {
   }
   return entries;
 }
-
 function visibleTasks() {
   if (state.currentProject === "all") return state.tasks;
   const pid = +state.currentProject;
   return state.tasks.filter(t => t.project_id === pid);
 }
-
 function visibleViolations() {
   if (state.currentProject === "all") return state.violations;
   const pid = +state.currentProject;
@@ -912,6 +761,7 @@ function render() {
   renderTimeline();
   renderUnscheduled();
   renderStatus();
+  updateZoomLabel();
 }
 
 function renderProjectSelect() {
@@ -935,7 +785,28 @@ function renderDayBar() {
   document.getElementById("day-weekday").textContent = weekdayName(state.dayStart);
 }
 
+/* map task.id -> DOM element, for hover highlight */
+const taskEls = new Map();
+
 function renderTimeline() {
+  const scroll = document.getElementById("timeline-scroll");
+  const inner = document.getElementById("timeline-inner");
+  const vw = Math.max(scroll.clientWidth, 200);
+
+  if (!zoomInitialized) {
+    zoomInitialized = true;
+    const fit = vw / (24 * 60);
+    if (fit < MIN_PX_PER_MIN) {
+      zoom = clampZoom(MIN_PX_PER_MIN / fit);
+    }
+    updateZoomLabel();
+  }
+
+  const pxPerMin = (vw / (24 * 60)) * zoom;
+  state.pxPerMin = pxPerMin;
+  const canvasW = Math.max(1440 * pxPerMin, vw);
+  inner.style.width = canvasW + "px";
+
   const entries = tasksInDay();
   const violSet = new Set(visibleViolations().map(v => v.task_id + ":" + v.project_id));
 
@@ -943,11 +814,6 @@ function renderTimeline() {
   const trackCount = Math.max(tracks.length, 3);
   const trackH = 48;
   const tracksHeight = trackCount * trackH;
-
-  const scroll = document.getElementById("timeline-scroll");
-  const width = Math.max(scroll.clientWidth, 400);
-  const pxPerMin = width / (24 * 60);
-  state.pxPerMin = pxPerMin;
 
   const tracksWrap = document.querySelector(".tracks-wrap");
   tracksWrap.style.height = tracksHeight + "px";
@@ -980,6 +846,7 @@ function renderTimeline() {
 
   const tracksEl = document.getElementById("tracks");
   tracksEl.innerHTML = "";
+  taskEls.clear();
   for (let i = 0; i < trackCount; i++) {
     const tr = document.createElement("div");
     tr.className = "track";
@@ -1009,7 +876,11 @@ function renderTimeline() {
     el.style.top = y + "px";
     el.style.width = Math.max(w, 28) + "px";
     el.style.height = h + "px";
-    el.title = e.task.name + "  " + fmtHM(e.start) + "\u2013" + fmtHM(e.end);
+
+    const deps = (e.task.dependencies || []);
+    const depLabels = deps.map(d => "[" + d + "]").join(" ");
+    el.title = e.task.name + "  " + fmtHM(e.start) + "\u2013" + fmtHM(e.end) +
+               (deps.length ? "  \u2022  after: " + depLabels : "");
 
     const showText = w >= 50;
     el.innerHTML =
@@ -1017,6 +888,7 @@ function renderTimeline() {
         ? '<div class="task-name">' + esc(e.task.name) + '</div>' +
           (w >= 80 ? '<div class="task-time">' + fmtHM(e.start) + '\u2013' + fmtHM(e.end) + '</div>' : '')
         : '') +
+      '<div class="resize-handle"></div>' +
       '<button class="menu-btn" type="button">\u22ef</button>';
 
     const mb = el.querySelector(".menu-btn");
@@ -1027,6 +899,10 @@ function renderTimeline() {
     });
 
     attachTimelineDrag(el, e);
+    attachResize(el, e);
+    attachHover(el, e.task);
+
+    taskEls.set(e.task.id, el);
     tracksEl.appendChild(el);
   }
 }
@@ -1082,12 +958,41 @@ function renderStatus() {
     (viol ? '  \u00b7  <span class="bad">' + viol + ' violation' + (viol > 1 ? 's' : '') + '</span>' : '');
 }
 
-/* ---------- drag: timeline ---------- */
+/* ---------- hover: dependency highlight ---------- */
+
+function attachHover(el, task) {
+  el.addEventListener("pointerenter", () => {
+    if (document.body.classList.contains("dragging")) return;
+    highlightDeps(task);
+  });
+  el.addEventListener("pointerleave", () => clearDepHighlight());
+}
+
+function highlightDeps(task) {
+  clearDepHighlight();
+  const upstream = new Set(task.dependencies || []);
+  const downstream = new Set();
+  for (const t of state.tasks) {
+    if (t.project_id !== task.project_id) continue;
+    if ((t.dependencies || []).includes(task.id)) downstream.add(t.id);
+  }
+  taskEls.get(task.id)?.classList.add("dep-self");
+  for (const id of upstream) taskEls.get(id)?.classList.add("dep-upstream");
+  for (const id of downstream) taskEls.get(id)?.classList.add("dep-downstream");
+}
+function clearDepHighlight() {
+  for (const el of taskEls.values()) {
+    el.classList.remove("dep-upstream", "dep-downstream", "dep-self");
+  }
+}
+
+/* ---------- drag: timeline body ---------- */
 
 function attachTimelineDrag(el, entry) {
   el.addEventListener("pointerdown", (ev) => {
     if (ev.button !== 0) return;
     if (ev.target.closest(".menu-btn")) return;
+    if (ev.target.closest(".resize-handle")) return;
 
     const startX = ev.clientX, startY = ev.clientY;
     const rect = el.getBoundingClientRect();
@@ -1123,10 +1028,13 @@ function attachTimelineDrag(el, entry) {
       el.style.opacity = "";
       document.body.classList.remove("dragging");
 
-      const sidebar = document.querySelector(".sidebar");
+      const sidebar = document.getElementById("sidebar");
       const sb = sidebar.getBoundingClientRect();
-      if (e.clientX >= sb.left && e.clientX <= sb.right &&
+      const sidebarVisible = !sidebar.classList.contains("hidden");
+      if (sidebarVisible &&
+          e.clientX >= sb.left && e.clientX <= sb.right &&
           e.clientY >= sb.top && e.clientY <= sb.bottom) {
+        pushUndo();
         try {
           await api("/tasks/" + entry.task.id + "/schedule", { method: "DELETE" });
           await reload();
@@ -1145,6 +1053,7 @@ function attachTimelineDrag(el, entry) {
         const durMs = entry._b - entry._a;
         startMsNew = Math.max(startMs, Math.min(startMsNew, endMs - durMs));
         const snapped = snapDateToMinutes(new Date(startMsNew), 5);
+        pushUndo();
         try {
           await api("/tasks/" + entry.task.id + "/schedule", {
             method: "PUT",
@@ -1212,6 +1121,7 @@ function attachUnscheduledDrag(el, task) {
         const durMs = task.duration_seconds * 1000;
         startMsNew = Math.max(startMs, Math.min(startMsNew, endMs - durMs));
         const snapped = snapDateToMinutes(new Date(startMsNew), 5);
+        pushUndo();
         try {
           await api("/tasks/" + task.id + "/schedule", {
             method: "PUT",
@@ -1220,6 +1130,73 @@ function attachUnscheduledDrag(el, task) {
           await reload();
         } catch (err) { alert(err.message); }
       }
+    };
+
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
+/* ---------- resize ---------- */
+
+function attachResize(el, entry) {
+  const handle = el.querySelector(".resize-handle");
+  if (!handle) return;
+
+  handle.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0) return;
+    ev.stopPropagation();
+
+    const startX = ev.clientX;
+    const origStartMs = new Date(entry.start).getTime();
+    const origDurSec = entry.task.duration_seconds;
+    const origVisibleW = parseFloat(el.style.width);
+    const { startMs: dayStartMs, endMs: dayEndMs } = dayBounds();
+    let dragging = false;
+    let newDurSec = origDurSec;
+
+    const onMove = (e) => {
+      const dx = e.clientX - startX;
+      if (!dragging) {
+        if (Math.abs(dx) < 2) return;
+        dragging = true;
+        document.body.classList.add("dragging");
+      }
+
+      const dxSec = (dx / state.pxPerMin) * 60;
+      let d = origDurSec + dxSec;
+      d = Math.max(5 * 60, d);
+      d = Math.round(d / (5 * 60)) * (5 * 60);
+
+      // clamp by day end
+      const maxDur = (dayEndMs - origStartMs) / 1000;
+      if (maxDur > 0) d = Math.min(d, maxDur);
+
+      newDurSec = d;
+
+      const newEndMs = origStartMs + d * 1000;
+      const visA = Math.max(origStartMs, dayStartMs);
+      const visB = Math.min(newEndMs, dayEndMs);
+      const visW = (visB - visA) / 60000 * state.pxPerMin;
+      el.style.width = Math.max(visW, 28) + "px";
+    };
+
+    const onUp = async (e) => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      document.body.classList.remove("dragging");
+      if (!dragging) return;
+      if (newDurSec === origDurSec) { await reload(); return; }
+      pushUndo();
+      try {
+        await api("/tasks/" + entry.task.id, {
+          method: "PATCH",
+          body: JSON.stringify({ duration_seconds: Math.round(newDurSec) }),
+        });
+        await reload();
+      } catch (err) { alert(err.message); await reload(); }
     };
 
     document.addEventListener("pointermove", onMove);
@@ -1284,7 +1261,6 @@ function openModal(html, onMount) {
   root.appendChild(backdrop);
   if (onMount) onMount(backdrop.querySelector(".modal"));
 }
-
 function swapModalContent(html, onMount) {
   const backdrop = document.querySelector(".modal-backdrop");
   if (!backdrop) { openModal(html, onMount); return; }
@@ -1292,12 +1268,9 @@ function swapModalContent(html, onMount) {
   m.innerHTML = html;
   if (onMount) onMount(m);
 }
+function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
 
-function closeModal() {
-  document.getElementById("modal-root").innerHTML = "";
-}
-
-/* ---------- task form (create + edit) ---------- */
+/* ---------- task form ---------- */
 
 function openTaskFormModal(task, opts) {
   opts = opts || {};
@@ -1319,12 +1292,8 @@ function openTaskFormModal(task, opts) {
     const inProject = state.currentProject !== "all";
     pid = inProject ? +state.currentProject : state.projects[0].id;
     prefill = {
-      name: "",
-      dur_h: 1,
-      dur_m: 0,
-      earliest_start: "",
-      deadline: "",
-      dependencies: [],
+      name: "", dur_h: 1, dur_m: 0,
+      earliest_start: "", deadline: "", dependencies: [],
     };
   }
 
@@ -1334,18 +1303,19 @@ function openTaskFormModal(task, opts) {
     esc(p.name) + "</option>"
   ).join("");
 
-  const otherTasks = state.tasks.filter(t =>
-    t.project_id === pid && (!isEdit || t.id !== task.id)
-  );
-  const depsHtml = otherTasks.length === 0
-    ? '<div class="deps-empty">No other tasks in this project</div>'
-    : otherTasks.map(t => (
-        '<label class="deps-item">' +
-          '<input type="checkbox" value="' + t.id + '"' +
-            (prefill.dependencies.indexOf(t.id) !== -1 ? " checked" : "") + '>' +
-          '<span>[' + t.id + '] ' + esc(t.name) + '</span>' +
-        '</label>'
-      )).join("");
+  function depsHtmlFor(projectId) {
+    const others = state.tasks.filter(t =>
+      t.project_id === projectId && (!isEdit || t.id !== task.id)
+    );
+    if (others.length === 0) return '<div class="deps-empty">No other tasks in this project</div>';
+    return others.map(t => (
+      '<label class="deps-item">' +
+        '<input type="checkbox" value="' + t.id + '"' +
+          (prefill.dependencies.indexOf(t.id) !== -1 ? " checked" : "") + '>' +
+        '<span>[' + t.id + '] ' + esc(t.name) + '</span>' +
+      '</label>'
+    )).join("");
+  }
 
   const html =
     '<div class="m-head">' + (isEdit ? "Edit task" : "New task") + '</div>' +
@@ -1368,7 +1338,7 @@ function openTaskFormModal(task, opts) {
         '<input type="datetime-local" name="deadline" value="' + prefill.deadline + '">' +
       '</label>' +
       '<label style="margin-bottom:4px"><span>Dependencies</span></label>' +
-      '<div class="deps-list" id="deps-list">' + depsHtml + '</div>' +
+      '<div class="deps-list" id="deps-list">' + depsHtmlFor(pid) + '</div>' +
       '<div class="deps-note">Selected tasks must finish before this one starts.</div>' +
     '</div>' +
     '<div class="m-foot">' +
@@ -1378,6 +1348,14 @@ function openTaskFormModal(task, opts) {
     '</form>';
 
   const mountFn = (m) => {
+    const projSelect = m.querySelector('select[name="project_id"]');
+    if (!lockProject && projSelect) {
+      projSelect.addEventListener("change", (e) => {
+        const newPid = +e.target.value;
+        m.querySelector("#deps-list").innerHTML = depsHtmlFor(newPid);
+      });
+    }
+
     m.querySelector("[data-close]").addEventListener("click", closeModal);
     m.querySelector("form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1387,9 +1365,7 @@ function openTaskFormModal(task, opts) {
       if (dur <= 0) { alert("Duration must be positive"); return; }
 
       const newDeps = new Set();
-      m.querySelectorAll("#deps-list input:checked").forEach(cb => {
-        newDeps.add(+cb.value);
-      });
+      m.querySelectorAll("#deps-list input:checked").forEach(cb => newDeps.add(+cb.value));
 
       const payload = {
         name: String(fd.get("name") || "").trim(),
@@ -1406,8 +1382,7 @@ function openTaskFormModal(task, opts) {
           const toRemove = [...oldDeps].filter(d => !newDeps.has(d));
           for (const dep of toAdd) {
             await api("/tasks/" + task.id + "/dependencies", {
-              method: "POST",
-              body: JSON.stringify({ depends_on: dep }),
+              method: "POST", body: JSON.stringify({ depends_on: dep }),
             });
           }
           for (const dep of toRemove) {
@@ -1416,8 +1391,7 @@ function openTaskFormModal(task, opts) {
         } else {
           payload.dependencies = [...newDeps];
           await api("/projects/" + targetPid + "/tasks", {
-            method: "POST",
-            body: JSON.stringify(payload),
+            method: "POST", body: JSON.stringify(payload),
           });
         }
         closeModal();
@@ -1437,10 +1411,7 @@ function openMoveModal(task) {
   const entry = state.schedule.find(s => s.task_id === task.id);
   let d;
   if (entry) d = new Date(entry.start);
-  else {
-    d = new Date(state.dayStart);
-    d.setHours(9, 0, 0, 0);
-  }
+  else { d = new Date(state.dayStart); d.setHours(9, 0, 0, 0); }
   const dateVal = d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
   const timeVal = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
 
@@ -1470,6 +1441,7 @@ function openMoveModal(task) {
     m.querySelector("[data-close]").addEventListener("click", closeModal);
     const uns = m.querySelector("[data-unsched]");
     if (uns) uns.addEventListener("click", async () => {
+      pushUndo();
       try {
         await api("/tasks/" + task.id + "/schedule", { method: "DELETE" });
         closeModal(); await reload();
@@ -1478,15 +1450,13 @@ function openMoveModal(task) {
     m.querySelector("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const dateStr = String(fd.get("date"));
-      const timeStr = String(fd.get("time"));
-      const [y, mo, da] = dateStr.split("-").map(Number);
-      const [hh, mm] = timeStr.split(":").map(Number);
+      const [y, mo, da] = String(fd.get("date")).split("-").map(Number);
+      const [hh, mm] = String(fd.get("time")).split(":").map(Number);
       const dt = new Date(y, mo - 1, da, hh, mm, 0, 0);
+      pushUndo();
       try {
         await api("/tasks/" + task.id + "/schedule", {
-          method: "PUT",
-          body: JSON.stringify({ start: isoLocal(dt) }),
+          method: "PUT", body: JSON.stringify({ start: isoLocal(dt) }),
         });
         closeModal(); await reload();
       } catch (err) { alert(err.message); }
@@ -1502,7 +1472,6 @@ function openDetailsModal(task) {
   const project = state.projects.find(p => p.id === task.project_id);
   const viols = state.violations.filter(v =>
     v.task_id === task.id && v.project_id === task.project_id);
-
   const depNames = (task.dependencies || []).map(id => {
     const t = state.tasks.find(x => x.id === id);
     return t ? ("[" + id + "] " + t.name) : ("[" + id + "]");
@@ -1546,6 +1515,108 @@ function openDetailsModal(task) {
   });
 }
 
+/* ---------- projects modal ---------- */
+
+function openProjectsModal() {
+  const list = state.projects.map(p => {
+    const taskCount = state.tasks.filter(t => t.project_id === p.id).length;
+    return '<div class="proj-item" data-id="' + p.id + '">' +
+      '<span class="proj-name">' + esc(p.name) + '</span>' +
+      '<span class="proj-count">' + taskCount + ' task' + (taskCount === 1 ? '' : 's') + '</span>' +
+      '<button class="icon-btn" data-act="edit" title="Rename">\u270E</button>' +
+      '<button class="icon-btn danger" data-act="del" title="Delete">\u2715</button>' +
+    '</div>';
+  }).join("");
+
+  const html =
+    '<div class="m-head">Projects</div>' +
+    '<div class="m-body">' +
+      '<div class="proj-list" id="proj-list">' +
+        (list || '<div class="deps-empty">No projects</div>') +
+      '</div>' +
+      '<form class="proj-new-form" id="proj-new-form">' +
+        '<input type="text" name="name" placeholder="New project name" required autocomplete="off">' +
+        '<button type="submit">+ Add</button>' +
+      '</form>' +
+    '</div>' +
+    '<div class="m-foot"><button type="button" data-close class="primary">Close</button></div>';
+
+  openModal(html, (m) => {
+    m.querySelector("[data-close]").addEventListener("click", closeModal);
+
+    m.querySelector("#proj-new-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const name = String(fd.get("name") || "").trim();
+      if (!name) return;
+      try {
+        await api("/projects", { method: "POST", body: JSON.stringify({ name }) });
+        await reload();
+        openProjectsModal();
+      } catch (err) { alert(err.message); }
+    });
+
+    m.querySelector("#proj-list").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const item = btn.closest(".proj-item");
+      const pid = +item.dataset.id;
+      const proj = state.projects.find(p => p.id === pid);
+      if (!proj) return;
+
+      if (btn.dataset.act === "del") {
+        const taskCount = state.tasks.filter(t => t.project_id === pid).length;
+        const msg = taskCount
+          ? 'Delete project "' + proj.name + '" and its ' + taskCount + ' task(s)?'
+          : 'Delete project "' + proj.name + '"?';
+        if (!confirm(msg)) return;
+        try {
+          await api("/projects/" + pid, { method: "DELETE" });
+          if (state.currentProject === String(pid)) state.currentProject = "all";
+          await reload();
+          openProjectsModal();
+        } catch (err) { alert(err.message); }
+      } else if (btn.dataset.act === "edit") {
+        startInlineRename(item, proj);
+      }
+    });
+  });
+}
+
+function startInlineRename(itemEl, project) {
+  const nameEl = itemEl.querySelector(".proj-name");
+  if (!nameEl) return;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "proj-name-input";
+  input.value = project.name;
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let done = false;
+  const finish = async (save) => {
+    if (done) return;
+    done = true;
+    const newName = input.value.trim();
+    if (save && newName && newName !== project.name) {
+      try {
+        await api("/projects/" + project.id, {
+          method: "PATCH", body: JSON.stringify({ name: newName }),
+        });
+        await reload();
+      } catch (err) { alert(err.message); }
+    }
+    openProjectsModal();
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
 /* ---------- reload ---------- */
 
 async function reload() {
@@ -1568,7 +1639,6 @@ function shiftDay(deltaDays) {
   state.dayStart = d;
   render();
 }
-
 function gotoToday() {
   const d = new Date(); d.setHours(0, 0, 0, 0);
   state.dayStart = d;
@@ -1578,6 +1648,8 @@ function gotoToday() {
 /* ---------- init ---------- */
 
 async function init() {
+  initSidebar();
+
   document.getElementById("project-select").addEventListener("change", (e) => {
     state.currentProject = e.target.value;
     render();
@@ -1587,6 +1659,7 @@ async function init() {
 
   document.getElementById("btn-autofill").addEventListener("click", async () => {
     try {
+      pushUndo();
       const targets = state.currentProject === "all"
         ? state.projects.map(p => p.id)
         : [+state.currentProject];
@@ -1597,6 +1670,9 @@ async function init() {
     } catch (err) { alert(err.message); }
   });
 
+  document.getElementById("btn-projects").addEventListener("click", openProjectsModal);
+  document.getElementById("btn-undo").addEventListener("click", undo);
+  document.getElementById("btn-sidebar").addEventListener("click", toggleSidebar);
   document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeIcon);
 
@@ -1604,15 +1680,40 @@ async function init() {
   document.getElementById("day-next").addEventListener("click", () => shiftDay(1));
   document.getElementById("day-today").addEventListener("click", gotoToday);
   document.getElementById("day-input").addEventListener("change", (e) => {
-    try {
-      state.dayStart = parseDateInput(e.target.value);
-      render();
-    } catch (_) {}
+    try { state.dayStart = parseDateInput(e.target.value); render(); } catch (_) {}
   });
+
+  document.getElementById("zoom-in").addEventListener("click", () => setZoom(zoom * 1.25));
+  document.getElementById("zoom-out").addEventListener("click", () => setZoom(zoom / 1.25));
+  document.getElementById("zoom-fit").addEventListener("click", resetZoom);
+
+  const scrollEl = document.getElementById("timeline-scroll");
+  scrollEl.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const rect = scrollEl.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const oldPx = state.pxPerMin;
+    const minutesAtCursor = (scrollEl.scrollLeft + cursorX) / oldPx;
+
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    zoom = clampZoom(zoom * factor);
+    updateZoomLabel();
+    renderTimeline();
+
+    const newPx = state.pxPerMin;
+    scrollEl.scrollLeft = minutesAtCursor * newPx - cursorX;
+  }, { passive: false });
 
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input, select, textarea")) {
       if (e.key === "Escape") { closeMenu(); closeModal(); }
+      return;
+    }
+    const isMod = e.ctrlKey || e.metaKey;
+    if (isMod && (e.key === "z" || e.key === "Z") && !e.shiftKey) {
+      e.preventDefault();
+      undo();
       return;
     }
     if (e.key === "Escape") { closeMenu(); closeModal(); }
@@ -1621,9 +1722,10 @@ async function init() {
     else if (e.key === "t" || e.key === "T") gotoToday();
   });
 
-  window.addEventListener("resize", () => render());
+  window.addEventListener("resize", () => renderTimeline());
 
   await reload();
+  updateUndoBtn();
 }
 
 init();

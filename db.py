@@ -215,3 +215,7 @@ def set_start(tid: int, start: datetime) -> None:
 def unset_start(tid: int) -> None:
     with connect() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM schedule WHERE task_id = %s", (tid,))
+
+def update_project(pid: int, name: str) -> None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE projects SET name = %s WHERE id = %s", (name, pid))

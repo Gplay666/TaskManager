@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 
 import services
 from models import ScheduledTask, Task
-
+from pathlib import Path
+from fastapi.responses import HTMLResponse
 
 app = FastAPI(title="Task Planner API", version="0.2.0")
 
@@ -18,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],           # для локалки — ок; для прода сузь
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -233,3 +234,27 @@ def autofill(pid: int):
 def violations(pid: int):
     return [ViolationOut(task_id=v.task_id, kind=v.kind, message=v.message)
             for v in services.validate_project(pid)]
+
+from fastapi.responses import StreamingResponse
+
+BASE_DIR = Path(__file__).parent
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    # FIXME: на Python 3.14 uvicorn/h11 зависает, если отдавать тело
+    # большого размера через обычный Response/HTMLResponse — уходят
+    # заголовки, а тело не отправляется. StreamingResponse работает.
+    # Правильное решение — откатиться на Python 3.12/3.13.
+    def stream():
+        with open(BASE_DIR / "index.html", "rb") as f:
+            while True:
+                chunk = f.read(8192)
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(stream(), media_type="text/html; charset=utf-8")
+
+from fastapi.middleware.cors import CORSMiddleware
+

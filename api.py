@@ -14,7 +14,15 @@ from models import ScheduledTask, Task
 
 app = FastAPI(title="Task Planner API", version="0.2.0")
 
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # для локалки — ок; для прода сузь
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ---------------------------------------------------------------------------
 # отображение ошибок
 # ---------------------------------------------------------------------------

@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Planner</title>
+<style>
+  :root {
+    --bg: #f2f2f4;
+    --panel: #ffffff;
+    --panel-2: #f7f7f9;
+    --toolbar: #e9e9ec;
+    --border: #d4d4d8;
+    --border-2: #e4e4e8;
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #2c5282;
+    --accent-h: #22436a;
+    --danger: #a12a2a;
+    --mono: "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  button { font: inherit; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--toolbar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .toolbar .sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+  .toolbar select,
+  .toolbar input[type=date],
+  .toolbar button {
+    font: inherit;
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    height: 26px;
+    line-height: 1;
+  }
+  .toolbar button:hover { background: var(--panel-2); }
+  .toolbar button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .toolbar button.primary:hover { background: var(--accent-h); }
+  .toolbar button.icon {
+    width: 26px;
+    padding: 0;
+    font-family: var(--mono);
+  }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    padding-right: 4px;
+  }
+  .toolbar .status .num { color: var(--text); }
+  .toolbar .status .bad { color: var(--danger); }
+
+  .day-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .day-bar .weekday {
+    font-size: 11px;
+    color: var(--muted);
+    padding-left: 4px;
+  }
+
+  /* ---------- layout ---------- */
+  .content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ---------- timeline ---------- */
+  .timeline-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .timeline-scroll {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+  }
+  .timeline-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .ruler {
+    height: 22px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .ruler .tick {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    padding-left: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    border-left: 1px solid var(--border-2);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  .ruler .tick.major { color: var(--text); border-left-color: var(--border); }
+
+  .tracks-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .grid .gline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-2);
+  }
+  .grid .gline.major { background: #e0e0e4; }
+  .grid .now {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #c14343;
+  }
+  .grid .now::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c14343;
+  }
+  .tracks {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-bottom: 1px solid var(--border-2);
+  }
+
+  .task {
+    position: absolute;
+    border-radius: 2px;
+    color: #fff;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    padding: 3px 5px;
+    border: 1px solid rgba(0,0,0,0.15);
+    touch-action: none;
+    font-size: 11px;
+  }
+  .task:hover { outline: 1px solid rgba(0,0,0,0.35); }
+  .task.violation { border-color: #b3261e; box-shadow: inset 0 0 0 1px #fff; }
+  .task .task-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .task .task-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .task .menu-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    padding: 0;
+    font-size: 10px;
+    line-height: 14px;
+    font-family: var(--mono);
+  }
+  .task:hover .menu-btn { opacity: 1; }
+  .task .menu-btn:hover { background: rgba(0,0,0,0.45); }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    width: 260px;
+    border-left: 1px solid var(--border);
+    background: var(--panel-2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-head {
+    padding: 8px 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .sidebar-head .count {
+    font-family: var(--mono);
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 4px;
+  }
+  .unscheduled-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .u-item {
+    position: relative;
+    padding: 6px 10px 6px 14px;
+    border-bottom: 1px solid var(--border-2);
+    cursor: grab;
+    user-select: none;
+    background: var(--panel);
+    touch-action: none;
+  }
+  .u-item:hover { background: #fbfbfd; }
+  .u-item .u-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+  }
+  .u-item .u-name {
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 22px;
+  }
+  .u-item .u-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .u-item .menu-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    color: var(--muted);
+    padding: 0;
+    font-size: 11px;
+    font-family: var(--mono);
+    line-height: 16px;
+  }
+  .u-item:hover .menu-btn { opacity: 1; }
+  .u-item .menu-btn:hover { background: #e4e4e8; color: var(--text); }
+  .empty {
+    padding: 16px 12px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ---------- modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,20,25,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0;
+    min-width: 340px;
+    max-width: 460px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    font-size: 13px;
+  }
+  .modal .m-head {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .modal .m-body { padding: 14px; }
+  .modal label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .modal label > span { display: block; margin-bottom: 3px; }
+  .modal input[type=text],
+  .modal input[type=number],
+  .modal input[type=date],
+  .modal input[type=time],
+  .modal input[type=datetime-local],
+  .modal select {
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    padding: 5px 7px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: #fff;
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--sans);
+  }
+  .modal input[type=date],
+  .modal input[type=time],
+  .modal input[type=datetime-local],
+  .modal input[type=number] { font-family: var(--mono); font-size: 12px; }
+  .modal input:disabled { background: #f0f0f2; color: var(--muted); }
+  .modal .row { display: flex; gap: 10px; }
+  .modal .row > * { flex: 1; }
+  .modal .m-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    background: var(--panel-2);
+  }
+  .modal button {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    cursor: pointer;
+    height: 26px;
+  }
+  .modal button:hover { background: var(--panel-2); }
+  .modal button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .modal button.primary:hover { background: var(--accent-h); }
+  .modal dl {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 6px 12px;
+    margin: 0;
+    font-size: 12px;
+  }
+  .modal dt {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 1px;
+  }
+  .modal dd { margin: 0; font-family: var(--mono); font-size: 12px; word-break: break-word; }
+  .modal dd.plain { font-family: var(--sans); }
+  .modal h3.sec {
+    margin: 14px 0 6px;
+    font-size: 11px;
+    color: var(--danger);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-top: 1px solid var(--border-2);
+    padding-top: 10px;
+  }
+  .modal ul.viol {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: var(--danger);
+  }
+
+  /* ---------- popover ---------- */
+  .popover {
+    position: fixed;
+    z-index: 2000;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    padding: 3px;
+    min-width: 130px;
+  }
+  .popover button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px 10px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--text);
+  }
+  .popover button:hover { background: var(--panel-2); }
+  .popover button.danger { color: var(--danger); }
+  .popover .sep {
+    height: 1px;
+    background: var(--border-2);
+    margin: 3px 0;
+  }
+
+  /* ---------- drag ghost ---------- */
+  .drag-ghost {
+    position: fixed !important;
+    pointer-events: none;
+    z-index: 1500;
+    opacity: 0.85;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+  body.dragging { cursor: grabbing; }
+  body.dragging * { cursor: grabbing !important; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <select id="project-select" title="Project"></select>
+  <span class="sep"></span>
+  <button id="btn-add" class="primary">New task</button>
+  <button id="btn-autofill" title="Schedule all unscheduled tasks in current project">Auto-fill</button>
+  <span class="spacer"></span>
+  <span id="status" class="status"></span>
+</div>
+
+<div class="day-bar">
+  <button class="icon" id="day-prev" title="Previous day">&lt;</button>
+  <input type="date" id="day-input">
+  <button class="icon" id="day-next" title="Next day">&gt;</button>
+  <button id="day-today">Today</button>
+  <span class="weekday" id="day-weekday"></span>
+</div>
+
+<div class="content">
+  <div class="timeline-panel">
+    <div class="timeline-scroll" id="timeline-scroll">
+      <div class="timeline-inner">
+        <div class="ruler" id="ruler"></div>
+        <div class="tracks-wrap">
+          <div class="grid" id="grid"></div>
+          <div class="tracks" id="tracks"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-head">Not scheduled <span class="count" id="u-count">0</span></div>
+    <div class="unscheduled-list" id="unscheduled-list"></div>
+  </aside>
+</div>
+
+<div id="modal-root"></div>
+<div id="menu-root"></div>
+
+<script>
+"use strict";
+const API = "http://localhost:8000";
+const DAY_MS = 24 * 3600 * 1000;
+
+/* subdued palette */
+const PALETTE = [
+  "#5b7a99", "#a5764f", "#7d8f5c", "#8f5c6e", "#5c7d7d",
+  "#a08d4f", "#6c5c8f", "#8f5c5c", "#4f6d5c", "#6c6c6c",
+];
+
+const state = {
+  projects: [],
+  currentProject: "all",
+  tasks: [],
+  schedule: [],
+  violations: [],
+  dayStart: (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })(),
+  pxPerMin: 1,
+};
+
+// ---------- API ----------
+
+async function api(path, init) {
+  let r;
+  try {
+    r = await fetch(API + path, {
+      ...init,
+      headers: { "Content-Type": "application/json",
+                 ...(init && init.headers ? init.headers : {}) },
+    });
+  } catch (e) {
+    throw new Error("Cannot reach API at " + API);
+  }
+  if (!r.ok) {
+    let detail;
+    try { detail = (await r.json()).detail; } catch (_) { detail = r.statusText; }
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  if (r.status === 204) return null;
+  return r.json();
+}
+
+async function loadAll() {
+  state.projects = await api("/projects");
+  const perProject = await Promise.all(state.projects.map(async (p) => {
+    const [tasks, schedule, violations] = await Promise.all([
+      api(`/projects/${p.id}/tasks`),
+      api(`/projects/${p.id}/schedule`),
+      api(`/projects/${p.id}/violations`).catch(() => []),
+    ]);
+    return { project: p, tasks, schedule, violations };
+  }));
+  state.tasks = []; state.schedule = []; state.violations = [];
+  for (const { project, tasks, schedule, violations } of perProject) {
+    for (const t of tasks) state.tasks.push(Object.assign({ project_id: project.id }, t));
+    for (const s of schedule) state.schedule.push(Object.assign({ project_id: project.id }, s));
+    for (const v of violations) state.violations.push(Object.assign({ project_id: project.id }, v));
+  }
+}
+
+// ---------- helpers ----------
+
+function colorFor(pid) { return PALETTE[(pid - 1 + PALETTE.length) % PALETTE.length]; }
+function pad2(n) { return String(n).padStart(2, "0"); }
+function fmtHM(iso) { const d = new Date(iso); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+function fmtDT(iso) {
+  if (!iso) return "\u2014";
+  const d = new Date(iso);
+  return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()) +
+         " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+function toDateInputValue(d) {
+  return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+}
+function parseDateInput(v) {
+  const [y, m, d] = v.split("-").map(Number);
+  const out = new Date(y, m - 1, d);
+  out.setHours(0,0,0,0);
+  return out;
+}
+function fmtDuration(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  if (h && m) return h + "h " + m + "m";
+  if (h) return h + "h";
+  return m + "m";
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+function snapDateToMinutes(date, step) {
+  step = step || 5;
+  const ms = date.getTime();
+  return new Date(Math.round(ms / (step * 60000)) * step * 60000);
+}
+function isoLocal(d) {
+  return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()) +
+         "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":00";
+}
+function weekdayName(d) {
+  return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+}
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+         a.getMonth() === b.getMonth() &&
+         a.getDate() === b.getDate();
+}
+
+// ---------- filters ----------
+
+function dayBounds() {
+  const s = state.dayStart.getTime();
+  return { startMs: s, endMs: s + DAY_MS };
+}
+
+function tasksInDay() {
+  const { startMs, endMs } = dayBounds();
+  const byId = new Map(state.tasks.map(t => [t.id, t]));
+  let entries = state.schedule.map(s => {
+    const task = byId.get(s.task_id);
+    if (!task) return null;
+    const a = new Date(s.start).getTime();
+    const b = new Date(s.end).getTime();
+    if (b <= startMs || a >= endMs) return null;
+    return Object.assign({}, s, { task, project_id: task.project_id, _a: a, _b: b });
+  }).filter(Boolean);
+  if (state.currentProject !== "all") {
+    const pid = +state.currentProject;
+    entries = entries.filter(e => e.project_id === pid);
+  }
+  return entries;
+}
+
+function visibleTasks() {
+  if (state.currentProject === "all") return state.tasks;
+  const pid = +state.currentProject;
+  return state.tasks.filter(t => t.project_id === pid);
+}
+
+function visibleViolations() {
+  if (state.currentProject === "all") return state.violations;
+  const pid = +state.currentProject;
+  return state.violations.filter(v => v.project_id === pid);
+}
+
+// ---------- layout ----------
+
+function assignTracks(entries) {
+  const sorted = entries.slice().sort((a, b) => a._a - b._a);
+  const tracks = [];
+  for (const e of sorted) {
+    let placed = false;
+    for (const track of tracks) {
+      const ok = track.every(x => x._b <= e._a || e._b <= x._a);
+      if (ok) { track.push(e); placed = true; break; }
+    }
+    if (!placed) tracks.push([e]);
+  }
+  return tracks;
+}
+
+// ---------- render ----------
+
+function render() {
+  renderProjectSelect();
+  renderDayBar();
+  renderTimeline();
+  renderUnscheduled();
+  renderStatus();
+}
+
+function renderProjectSelect() {
+  const sel = document.getElementById("project-select");
+  const prev = state.currentProject;
+  sel.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "all"; optAll.textContent = "All projects";
+  sel.appendChild(optAll);
+  for (const p of state.projects) {
+    const o = document.createElement("option");
+    o.value = String(p.id); o.textContent = p.name;
+    sel.appendChild(o);
+  }
+  sel.value = prev;
+  if (sel.value !== prev) { state.currentProject = "all"; sel.value = "all"; }
+}
+
+function renderDayBar() {
+  document.getElementById("day-input").value = toDateInputValue(state.dayStart);
+  document.getElementById("day-weekday").textContent = weekdayName(state.dayStart);
+}
+
+function renderTimeline() {
+  const entries = tasksInDay();
+  const violSet = new Set(visibleViolations().map(v => v.task_id + ":" + v.project_id));
+
+  const tracks = assignTracks(entries);
+  const trackCount = Math.max(tracks.length, 3);
+  const trackH = 40;
+  const tracksHeight = trackCount * trackH;
+
+  const scroll = document.getElementById("timeline-scroll");
+  const width = Math.max(scroll.clientWidth, 400);
+  const pxPerMin = width / (24 * 60);
+  state.pxPerMin = pxPerMin;
+
+  const tracksWrap = document.querySelector(".tracks-wrap");
+  tracksWrap.style.height = tracksHeight + "px";
+
+  // ruler
+  const ruler = document.getElementById("ruler");
+  ruler.innerHTML = "";
+  for (let h = 0; h <= 23; h++) {
+    const div = document.createElement("div");
+    div.className = "tick" + (h % 3 === 0 ? " major" : "");
+    div.style.left = (h * 60 * pxPerMin) + "px";
+    div.textContent = pad2(h);
+    ruler.appendChild(div);
+  }
+
+  // grid
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  for (let h = 0; h <= 24; h++) {
+    const line = document.createElement("div");
+    line.className = "gline" + (h % 3 === 0 ? " major" : "");
+    line.style.left = (h * 60 * pxPerMin) + "px";
+    grid.appendChild(line);
+  }
+  const now = new Date();
+  if (isSameDay(now, state.dayStart)) {
+    const nowLine = document.createElement("div");
+    nowLine.className = "now";
+    nowLine.style.left = ((now.getHours() * 60 + now.getMinutes()) * pxPerMin) + "px";
+    grid.appendChild(nowLine);
+  }
+
+  // tracks background rows
+  const tracksEl = document.getElementById("tracks");
+  tracksEl.innerHTML = "";
+  for (let i = 0; i < trackCount; i++) {
+    const tr = document.createElement("div");
+    tr.className = "track";
+    tr.style.top = (i * trackH) + "px";
+    tr.style.height = trackH + "px";
+    tracksEl.appendChild(tr);
+  }
+
+  // task placement
+  const { startMs, endMs } = dayBounds();
+  const idxByTask = new Map();
+  tracks.forEach((tr, idx) => tr.forEach(e => idxByTask.set(e.task.id, idx)));
+
+  for (const e of entries) {
+    const a = Math.max(e._a, startMs);
+    const b = Math.min(e._b, endMs);
+    const x = (a - startMs) / 60000 * pxPerMin;
+    const w = (b - a) / 60000 * pxPerMin;
+    const idx = idxByTask.get(e.task.id) || 0;
+    const y = idx * trackH + 3;
+    const h = trackH - 6;
+
+    const el = document.createElement("div");
+    el.className = "task";
+    if (violSet.has(e.task.id + ":" + e.project_id)) el.classList.add("violation");
+    el.style.background = colorFor(e.project_id);
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.style.width = Math.max(w, 24) + "px";
+    el.style.height = h + "px";
+    el.title = e.task.name + "  " + fmtHM(e.start) + "\u2013" + fmtHM(e.end);
+
+    const showText = w >= 44;
+    el.innerHTML =
+      (showText
+        ? '<div class="task-name">' + esc(e.task.name) + '</div>' +
+          (w >= 70 ? '<div class="task-time">' + fmtHM(e.start) + '\u2013' + fmtHM(e.end) + '</div>' : '')
+        : '') +
+      '<button class="menu-btn" type="button">\u22ef</button>';
+
+    const mb = el.querySelector(".menu-btn");
+    mb.addEventListener("pointerdown", ev => ev.stopPropagation());
+    mb.addEventListener("click", ev => {
+      ev.stopPropagation();
+      openTaskMenu(mb, e.task);
+    });
+
+    attachTimelineDrag(el, e);
+    tracksEl.appendChild(el);
+  }
+}
+
+function renderUnscheduled() {
+  const list = document.getElementById("unscheduled-list");
+  list.innerHTML = "";
+  const scheduledIds = new Set(state.schedule.map(s => s.task_id));
+  const unscheduled = visibleTasks()
+    .filter(t => !scheduledIds.has(t.id))
+    .sort((a, b) => a.id - b.id);
+
+  document.getElementById("u-count").textContent = String(unscheduled.length);
+
+  if (unscheduled.length === 0) {
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "All tasks are scheduled";
+    list.appendChild(e);
+    return;
+  }
+
+  for (const task of unscheduled) {
+    const el = document.createElement("div");
+    el.className = "u-item";
+    const color = colorFor(task.project_id);
+    el.innerHTML =
+      '<div class="u-bar" style="background:' + color + '"></div>' +
+      '<div class="u-name">' + esc(task.name) + '</div>' +
+      '<div class="u-meta">' + fmtDuration(task.duration_seconds) + '</div>' +
+      '<button class="menu-btn" type="button">\u22ef</button>';
+
+    const mb = el.querySelector(".menu-btn");
+    mb.addEventListener("pointerdown", ev => ev.stopPropagation());
+    mb.addEventListener("click", ev => {
+      ev.stopPropagation();
+      openTaskMenu(mb, task);
+    });
+
+    attachUnscheduledDrag(el, task);
+    list.appendChild(el);
+  }
+}
+
+function renderStatus() {
+  const total = visibleTasks().length;
+  const schedIds = new Set(state.schedule.map(s => s.task_id));
+  const sched = visibleTasks().filter(t => schedIds.has(t.id)).length;
+  const viol = visibleViolations().length;
+  const st = document.getElementById("status");
+  st.innerHTML =
+    'scheduled <span class="num">' + sched + '</span>/<span class="num">' + total + '</span>' +
+    (viol ? '  \u00b7  <span class="bad">' + viol + ' violation' + (viol > 1 ? 's' : '') + '</span>' : '');
+}
+
+// ---------- drag: timeline ----------
+
+function attachTimelineDrag(el, entry) {
+  el.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0) return;
+    if (ev.target.closest(".menu-btn")) return;
+
+    const startX = ev.clientX, startY = ev.clientY;
+    const rect = el.getBoundingClientRect();
+    const offX = ev.clientX - rect.left;
+    const offY = ev.clientY - rect.top;
+    let dragging = false;
+    let ghost = null;
+
+    const onMove = (e) => {
+      if (!dragging) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return;
+        dragging = true;
+        ghost = el.cloneNode(true);
+        ghost.classList.add("drag-ghost");
+        ghost.style.width = rect.width + "px";
+        ghost.style.height = rect.height + "px";
+        ghost.style.left = (e.clientX - offX) + "px";
+        ghost.style.top = (e.clientY - offY) + "px";
+        document.body.appendChild(ghost);
+        el.style.opacity = "0.35";
+        document.body.classList.add("dragging");
+      }
+      ghost.style.left = (e.clientX - offX) + "px";
+      ghost.style.top = (e.clientY - offY) + "px";
+    };
+
+    const onUp = async (e) => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      if (!dragging) return;
+      ghost.remove();
+      el.style.opacity = "";
+      document.body.classList.remove("dragging");
+
+      const sidebar = document.querySelector(".sidebar");
+      const sb = sidebar.getBoundingClientRect();
+      if (e.clientX >= sb.left && e.clientX <= sb.right &&
+          e.clientY >= sb.top && e.clientY <= sb.bottom) {
+        try {
+          await api("/tasks/" + entry.task.id + "/schedule", { method: "DELETE" });
+          await reload();
+        } catch (err) { alert(err.message); }
+        return;
+      }
+
+      const tracksEl = document.getElementById("tracks");
+      const tr = tracksEl.getBoundingClientRect();
+      if (e.clientX >= tr.left && e.clientX <= tr.right &&
+          e.clientY >= tr.top && e.clientY <= tr.bottom) {
+        const { startMs, endMs } = dayBounds();
+        const cursorMin = (e.clientX - tr.left) / state.pxPerMin;
+        const offsetMin = offX / state.pxPerMin;
+        let startMsNew = startMs + (cursorMin - offsetMin) * 60000;
+        const durMs = entry._b - entry._a;
+        startMsNew = Math.max(startMs, Math.min(startMsNew, endMs - durMs));
+        const snapped = snapDateToMinutes(new Date(startMsNew), 5);
+        try {
+          await api("/tasks/" + entry.task.id + "/schedule", {
+            method: "PUT",
+            body: JSON.stringify({ start: isoLocal(snapped) }),
+          });
+          await reload();
+        } catch (err) { alert(err.message); }
+      }
+    };
+
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
+// ---------- drag: unscheduled ----------
+
+function attachUnscheduledDrag(el, task) {
+  el.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0) return;
+    if (ev.target.closest(".menu-btn")) return;
+
+    const startX = ev.clientX, startY = ev.clientY;
+    const rect = el.getBoundingClientRect();
+    const offX = ev.clientX - rect.left;
+    const offY = ev.clientY - rect.top;
+    let dragging = false;
+    let ghost = null;
+
+    const onMove = (e) => {
+      if (!dragging) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return;
+        dragging = true;
+        ghost = el.cloneNode(true);
+        ghost.classList.add("drag-ghost");
+        ghost.style.width = rect.width + "px";
+        ghost.style.left = (e.clientX - offX) + "px";
+        ghost.style.top = (e.clientY - offY) + "px";
+        document.body.appendChild(ghost);
+        el.style.opacity = "0.35";
+        document.body.classList.add("dragging");
+      }
+      ghost.style.left = (e.clientX - offX) + "px";
+      ghost.style.top = (e.clientY - offY) + "px";
+    };
+
+    const onUp = async (e) => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      if (!dragging) return;
+      ghost.remove();
+      el.style.opacity = "";
+      document.body.classList.remove("dragging");
+
+      const tracksEl = document.getElementById("tracks");
+      const tr = tracksEl.getBoundingClientRect();
+      if (e.clientX >= tr.left && e.clientX <= tr.right &&
+          e.clientY >= tr.top && e.clientY <= tr.bottom) {
+        const { startMs, endMs } = dayBounds();
+        const cursorMin = (e.clientX - tr.left) / state.pxPerMin;
+        const offsetMin = offX / state.pxPerMin;
+        let startMsNew = startMs + (cursorMin - offsetMin) * 60000;
+        const durMs = task.duration_seconds * 1000;
+        startMsNew = Math.max(startMs, Math.min(startMsNew, endMs - durMs));
+        const snapped = snapDateToMinutes(new Date(startMsNew), 5);
+        try {
+          await api("/tasks/" + task.id + "/schedule", {
+            method: "PUT",
+            body: JSON.stringify({ start: isoLocal(snapped) }),
+          });
+          await reload();
+        } catch (err) { alert(err.message); }
+      }
+    };
+
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
+// ---------- popover ----------
+
+function openTaskMenu(anchor, task) {
+  closeMenu();
+  const menu = document.createElement("div");
+  menu.className = "popover";
+  const scheduled = state.schedule.some(s => s.task_id === task.id);
+  menu.innerHTML =
+    '<button data-act="details">Details</button>' +
+    '<button data-act="move">' + (scheduled ? 'Move to\u2026' : 'Schedule at\u2026') + '</button>' +
+    '<div class="sep"></div>' +
+    '<button data-act="delete" class="danger">Delete</button>';
+  const r = anchor.getBoundingClientRect();
+  menu.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 160)) + "px";
+  menu.style.top = (r.bottom + 3) + "px";
+
+  menu.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    closeMenu();
+    if (act === "details") openDetailsModal(task);
+    else if (act === "move") openMoveModal(task);
+    else if (act === "delete") {
+      if (!confirm('Delete "' + task.name + '"?')) return;
+      try { await api("/tasks/" + task.id, { method: "DELETE" }); await reload(); }
+      catch (err) { alert(err.message); }
+    }
+  });
+
+  document.getElementById("menu-root").appendChild(menu);
+  const off = (e) => { if (!menu.contains(e.target)) closeMenu(); };
+  setTimeout(() => document.addEventListener("pointerdown", off, true), 0);
+  menu._off = off;
+}
+
+function closeMenu() {
+  const root = document.getElementById("menu-root");
+  Array.from(root.children).forEach(child => {
+    if (child._off) document.removeEventListener("pointerdown", child._off, true);
+    child.remove();
+  });
+}
+
+// ---------- modals ----------
+
+function openModal(html, onMount) {
+  closeModal();
+  const root = document.getElementById("modal-root");
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = '<div class="modal">' + html + '</div>';
+  backdrop.addEventListener("pointerdown", (e) => { if (e.target === backdrop) closeModal(); });
+  root.appendChild(backdrop);
+  if (onMount) onMount(backdrop.querySelector(".modal"));
+}
+
+function closeModal() {
+  document.getElementById("modal-root").innerHTML = "";
+}
+
+function openAddTaskModal() {
+  if (state.projects.length === 0) { alert("No projects available"); return; }
+  const inProject = state.currentProject !== "all";
+  const defaultPid = inProject ? +state.currentProject : state.projects[0].id;
+
+  const opts = state.projects.map(p =>
+    '<option value="' + p.id + '"' + (p.id === defaultPid ? " selected" : "") + ">" +
+    esc(p.name) + "</option>"
+  ).join("");
+
+  const html =
+    '<div class="m-head">New task</div>' +
+    '<form id="add-form">' +
+    '<div class="m-body">' +
+      '<label><span>Project</span>' +
+        '<select name="project_id"' + (inProject ? " disabled" : "") + ">" + opts + "</select>" +
+      "</label>" +
+      '<label><span>Name</span>' +
+        '<input type="text" name="name" required autocomplete="off">' +
+      "</label>" +
+      '<div class="row">' +
+        '<label><span>Hours</span><input type="number" name="dur_h" min="0" value="1"></label>' +
+        '<label><span>Minutes</span><input type="number" name="dur_m" min="0" max="59" value="0"></label>' +
+      "</div>" +
+      '<div class="row">' +
+        '<label><span>Earliest start</span><input type="datetime-local" name="earliest_start"></label>' +
+      "</div>" +
+      '<div class="row">' +
+        '<label><span>Deadline</span><input type="datetime-local" name="deadline"></label>' +
+      "</div>" +
+    "</div>" +
+    '<div class="m-foot">' +
+      '<button type="button" data-close>Cancel</button>' +
+      '<button type="submit" class="primary">Create</button>' +
+    "</div>" +
+    "</form>";
+
+  openModal(html, (m) => {
+    m.querySelector("[data-close]").addEventListener("click", closeModal);
+    m.querySelector("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const pid = inProject ? +state.currentProject : +fd.get("project_id");
+      const dur = (+fd.get("dur_h") || 0) * 3600 + (+fd.get("dur_m") || 0) * 60;
+      if (dur <= 0) { alert("Duration must be positive"); return; }
+      const payload = {
+        name: String(fd.get("name") || "").trim(),
+        duration_seconds: dur,
+        earliest_start: fromLocal(fd.get("earliest_start")),
+        deadline: fromLocal(fd.get("deadline")),
+        dependencies: [],
+      };
+      try {
+        await api("/projects/" + pid + "/tasks", { method: "POST", body: JSON.stringify(payload) });
+        closeModal(); await reload();
+      } catch (err) { alert(err.message); }
+    });
+    setTimeout(() => { const f = m.querySelector('input[name="name"]'); if (f) f.focus(); }, 0);
+  });
+}
+
+function fromLocal(v) { return v ? (v.length === 16 ? v + ":00" : v) : null; }
+function toLocalInput(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()) +
+         "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+
+function openMoveModal(task) {
+  const entry = state.schedule.find(s => s.task_id === task.id);
+  let d;
+  if (entry) d = new Date(entry.start);
+  else {
+    d = new Date(state.dayStart);
+    d.setHours(9, 0, 0, 0);
+  }
+  const dateVal = d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+  const timeVal = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+
+  const html =
+    '<div class="m-head">' + (entry ? "Move task" : "Schedule task") + '</div>' +
+    '<form id="move-form">' +
+    '<div class="m-body">' +
+      '<div style="font-size:13px;margin-bottom:12px;color:var(--text)">' + esc(task.name) + '</div>' +
+      '<div class="row">' +
+        '<label><span>Date</span><input type="date" name="date" value="' + dateVal + '" required></label>' +
+        '<label><span>Time</span><input type="time" name="time" value="' + timeVal + '" required></label>' +
+      "</div>" +
+      '<div style="font-size:11px;color:var(--muted)">Duration: ' +
+        fmtDuration(task.duration_seconds) +
+        (entry ? ' \u00b7 currently ' + fmtDT(entry.start) : '') +
+      "</div>" +
+    "</div>" +
+    '<div class="m-foot">' +
+      (entry ? '<button type="button" data-unsched>Unschedule</button>' : '') +
+      '<span style="flex:1"></span>' +
+      '<button type="button" data-close>Cancel</button>' +
+      '<button type="submit" class="primary">' + (entry ? "Move" : "Schedule") + "</button>" +
+    "</div>" +
+    "</form>";
+
+  openModal(html, (m) => {
+    m.querySelector("[data-close]").addEventListener("click", closeModal);
+    const uns = m.querySelector("[data-unsched]");
+    if (uns) uns.addEventListener("click", async () => {
+      try {
+        await api("/tasks/" + task.id + "/schedule", { method: "DELETE" });
+        closeModal(); await reload();
+      } catch (err) { alert(err.message); }
+    });
+    m.querySelector("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const dateStr = String(fd.get("date"));
+      const timeStr = String(fd.get("time"));
+      const [y, mo, da] = dateStr.split("-").map(Number);
+      const [hh, mm] = timeStr.split(":").map(Number);
+      const dt = new Date(y, mo - 1, da, hh, mm, 0, 0);
+      try {
+        await api("/tasks/" + task.id + "/schedule", {
+          method: "PUT",
+          body: JSON.stringify({ start: isoLocal(dt) }),
+        });
+        closeModal(); await reload();
+      } catch (err) { alert(err.message); }
+    });
+    setTimeout(() => { const f = m.querySelector('input[name="time"]'); if (f) f.focus(); }, 0);
+  });
+}
+
+function openDetailsModal(task) {
+  const entry = state.schedule.find(s => s.task_id === task.id);
+  const project = state.projects.find(p => p.id === task.project_id);
+  const viols = state.violations.filter(v =>
+    v.task_id === task.id && v.project_id === task.project_id);
+
+  const depNames = (task.dependencies || []).map(id => {
+    const t = state.tasks.find(x => x.id === id);
+    return t ? ("[" + id + "] " + t.name) : ("[" + id + "]");
+  });
+
+  const scheduleLine = entry
+    ? fmtDT(entry.start) + " \u2014 " + fmtDT(entry.end)
+    : "not scheduled";
+
+  const html =
+    '<div class="m-head">Task details</div>' +
+    '<div class="m-body">' +
+      '<dl>' +
+        '<dt>Name</dt><dd class="plain">' + esc(task.name) + '</dd>' +
+        '<dt>ID</dt><dd>' + task.id + '</dd>' +
+        '<dt>Project</dt><dd class="plain">' + esc(project ? project.name : "\u2014") + '</dd>' +
+        '<dt>Duration</dt><dd>' + fmtDuration(task.duration_seconds) + '</dd>' +
+        '<dt>Earliest start</dt><dd>' + fmtDT(task.earliest_start) + '</dd>' +
+        '<dt>Deadline</dt><dd>' + fmtDT(task.deadline) + '</dd>' +
+        '<dt>Scheduled</dt><dd>' + scheduleLine + '</dd>' +
+        '<dt>Depends on</dt><dd class="plain">' +
+          (depNames.length ? depNames.map(esc).join("<br>") : "\u2014") +
+        '</dd>' +
+      '</dl>' +
+      (viols.length
+        ? '<h3 class="sec">Violations</h3>' +
+          '<ul class="viol">' + viols.map(v => "<li>" + esc(v.message) + "</li>").join("") + "</ul>"
+        : "") +
+    '</div>' +
+    '<div class="m-foot"><button type="button" data-close class="primary">Close</button></div>';
+
+  openModal(html, (m) => {
+    m.querySelector("[data-close]").addEventListener("click", closeModal);
+  });
+}
+
+// ---------- reload ----------
+
+async function reload() {
+  try {
+    await loadAll();
+    render();
+  } catch (err) {
+    console.error(err);
+    const st = document.getElementById("status");
+    st.innerHTML = '<span class="bad">' + esc(err.message) + '</span>';
+  }
+}
+
+// ---------- day navigation ----------
+
+function shiftDay(deltaDays) {
+  const d = new Date(state.dayStart);
+  d.setDate(d.getDate() + deltaDays);
+  d.setHours(0, 0, 0, 0);
+  state.dayStart = d;
+  render();
+}
+
+function gotoToday() {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  state.dayStart = d;
+  render();
+}
+
+// ---------- init ----------
+
+async function init() {
+  document.getElementById("project-select").addEventListener("change", (e) => {
+    state.currentProject = e.target.value;
+    render();
+  });
+
+  document.getElementById("btn-add").addEventListener("click", openAddTaskModal);
+
+  document.getElementById("btn-autofill").addEventListener("click", async () => {
+    try {
+      const targets = state.currentProject === "all"
+        ? state.projects.map(p => p.id)
+        : [+state.currentProject];
+      for (const pid of targets) {
+        await api("/projects/" + pid + "/autofill", { method: "POST" });
+      }
+      await reload();
+    } catch (err) { alert(err.message); }
+  });
+
+  document.getElementById("day-prev").addEventListener("click", () => shiftDay(-1));
+  document.getElementById("day-next").addEventListener("click", () => shiftDay(1));
+  document.getElementById("day-today").addEventListener("click", gotoToday);
+  document.getElementById("day-input").addEventListener("change", (e) => {
+    try {
+      state.dayStart = parseDateInput(e.target.value);
+      render();
+    } catch (_) {}
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input, select, textarea")) {
+      if (e.key === "Escape") { closeMenu(); closeModal(); }
+      return;
+    }
+    if (e.key === "Escape") { closeMenu(); closeModal(); }
+    else if (e.key === "ArrowLeft") shiftDay(-1);
+    else if (e.key === "ArrowRight") shiftDay(1);
+    else if (e.key === "t" || e.key === "T") gotoToday();
+  });
+
+  window.addEventListener("resize", () => render());
+
+  await reload();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -3,8 +3,15 @@
 Запуск сервера:
     uvicorn api:app --reload
 
+Аккаунт (сессия сохраняется в файл, пароль нигде не хранится):
+    python cli.py register [--user NAME]
+    python cli.py login [--user NAME]
+    python cli.py logout
+    python cli.py whoami
+
 Запуск CLI:
     python cli.py                      # интерактив с меню
+    python cli.py projects             # список проектов
     python cli.py show
     python cli.py place 2 11:00
     python cli.py autofill
@@ -12,22 +19,61 @@
 
 URL API по умолчанию: http://localhost:8000
 Переопределяется через TASK_PLANNER_API=...
+Файл сессии: ~/.config/task-planner/session.json
+Переопределяется через TASK_PLANNER_SESSION=...
 """
 
 from __future__ import annotations
 
 import argparse
+import getpass
+import json
 import os
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import httpx
 
+import auth
 import render
 from models import ScheduledTask, Task
 
 
 API_URL = os.environ.get("TASK_PLANNER_API", "http://localhost:8000")
+SESSION_FILE = Path(os.environ.get(
+    "TASK_PLANNER_SESSION",
+    Path.home() / ".config" / "task-planner" / "session.json",
+))
+
+
+# ---------------------------------------------------------------------------
+# сохранённая сессия
+# ---------------------------------------------------------------------------
+
+def _load_token() -> str | None:
+    try:
+        data = json.loads(SESSION_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    token = data.get("token")
+    return token if isinstance(token, str) and token else None
+
+
+def _save_token(token: str) -> None:
+    SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SESSION_FILE.write_text(json.dumps({"token": token}), encoding="utf-8")
+    try:
+        SESSION_FILE.chmod(0o600)
+    except OSError:
+        pass
+
+
+def _clear_token() -> None:
+    try:
+        SESSION_FILE.unlink()
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -38,15 +84,29 @@ class ApiError(Exception):
     pass
 
 
+class AuthRequired(ApiError):
+    """401: нужно войти (сессии нет, истекла или отозвана)."""
+
+
 class Api:
-    def __init__(self, url: str):
+    def __init__(self, url: str, token: str | None = None):
         self.client = httpx.Client(base_url=url, timeout=10.0)
+        self.token = token
+
+    def _headers(self, extra: dict | None) -> dict:
+        headers = dict(extra or {})
+        if self.token:
+            headers.setdefault("Cookie", f"{auth.SESSION_COOKIE}={self.token}")
+        return headers
 
     def _do(self, method: str, path: str, **kw):
+        kw["headers"] = self._headers(kw.get("headers"))
         try:
             r = self.client.request(method, path, **kw)
         except httpx.RequestError as e:
             raise ApiError(f"cannot reach API at {self.client.base_url}: {e}") from e
+        if r.status_code == 401:
+            raise AuthRequired("not signed in")
         if r.status_code >= 400:
             try:
                 detail = r.json().get("detail", r.text)
@@ -60,6 +120,62 @@ class Api:
     def put(self, path, **kw):     return self._do("PUT", path, **kw)
     def patch(self, path, **kw):   return self._do("PATCH", path, **kw)
     def delete(self, path, **kw):  return self._do("DELETE", path, **kw)
+
+
+# ---------------------------------------------------------------------------
+# вход / регистрация
+# ---------------------------------------------------------------------------
+
+def _ask_credentials(username: str | None = None) -> tuple[str, str]:
+    if not username:
+        username = input("username: ").strip()
+    password = getpass.getpass("password: ")
+    return username, password
+
+
+def _auth_request(api: Api, path: str, username: str, password: str) -> dict:
+    """POST /auth/login|register. Токен приходит в Set-Cookie."""
+    try:
+        r = api.client.post(path, json={"username": username, "password": password})
+    except httpx.RequestError as e:
+        raise ApiError(f"cannot reach API at {api.client.base_url}: {e}") from e
+    if r.status_code >= 400:
+        try:
+            detail = r.json().get("detail", r.text)
+        except Exception:
+            detail = r.text
+        raise ApiError(f"{r.status_code}: {detail}")
+    token = api.client.cookies.get(auth.SESSION_COOKIE)
+    if not token:
+        raise ApiError("server did not return a session cookie")
+    api.token = token
+    return r.json()
+
+
+def _do_login(api: Api, username: str | None = None) -> dict:
+    username, password = _ask_credentials(username)
+    user = _auth_request(api, "/auth/login", username, password)
+    _save_token(api.token)
+    return user
+
+
+def _ensure_auth(api: Api) -> bool:
+    """Проверить сессию; если её нет — предложить войти."""
+    try:
+        api.get("/auth/me")
+        return True
+    except AuthRequired:
+        print("not signed in.")
+    except ApiError as e:
+        print(f"error: {e}")
+        return False
+    try:
+        user = _do_login(api)
+    except (ApiError, EOFError, KeyboardInterrupt):
+        print()
+        return False
+    print(f"signed in as {user['username']}")
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -95,6 +211,20 @@ def _fetch_state(api: Api, pid: int) -> tuple[dict[int, Task], dict[int, Schedul
     return tasks, schedule
 
 
+def _resolve_project(api: Api, requested: int | None) -> tuple[int, str] | None:
+    projects = api.get("/projects")
+    if requested is not None:
+        for p in projects:
+            if p["id"] == requested:
+                return (p["id"], p["name"])
+        print(f"project {requested} not found")
+        return None
+    if not projects:
+        print("no projects yet — create one in the web UI")
+        return None
+    return (projects[0]["id"], projects[0]["name"])
+
+
 # ---------------------------------------------------------------------------
 # парсинг ввода
 # ---------------------------------------------------------------------------
@@ -123,7 +253,11 @@ def _print_summary(tasks: dict[int, Task],
                    schedule: dict[int, ScheduledTask],
                    api: Api, pid: int,
                    minutes_per_char: int,
-                   ascii_only: bool) -> None:
+                   ascii_only: bool,
+                   project_name: str | None = None) -> None:
+    if project_name is not None:
+        print(f"Project: [{pid}] {project_name}")
+
     print(render.timeline(tasks, schedule,
                           minutes_per_char=minutes_per_char,
                           ascii_only=ascii_only))
@@ -185,6 +319,7 @@ def _menu_text(minutes_per_char: int, ascii_only: bool) -> None:
     print("[9]  Zoom in")
     print("[10] Zoom out")
     print(f"[11] ASCII mode: {'on' if ascii_only else 'off'}")
+    print("[12] Switch project")
     print("[0]  Exit")
 
 
@@ -345,7 +480,20 @@ def _flow_rm_dep(api: Api, tasks: dict[int, Task]) -> None:
     print(f"  removed: [{tid}] no longer depends on [{dep}]")
 
 
+def _flow_switch_project(api: Api, current: int) -> int:
+    projects = api.get("/projects")
+    items = [
+        (p["id"], f"[{p['id']}] {p['name']}" + ("   ← current" if p["id"] == current else ""))
+        for p in projects
+    ]
+    print()
+    print("Choose project:")
+    pid = _pick(items, "project> ")
+    return pid if pid is not None else current
+
+
 def interactive(api: Api, pid: int,
+                project_name: str | None = None,
                 minutes_per_char: int = 10,
                 ascii_only: bool = False) -> None:
     while True:
@@ -358,7 +506,8 @@ def interactive(api: Api, pid: int,
         if sys.stdout.isatty():
             print("\033[2J\033[H", end="")
 
-        _print_summary(tasks, schedule, api, pid, minutes_per_char, ascii_only)
+        _print_summary(tasks, schedule, api, pid, minutes_per_char, ascii_only,
+                       project_name)
         _menu_text(minutes_per_char, ascii_only)
 
         try:
@@ -393,8 +542,17 @@ def interactive(api: Api, pid: int,
                 minutes_per_char = min(240, minutes_per_char * 2)
             elif choice == "11":
                 ascii_only = not ascii_only
+            elif choice == "12":
+                new_pid = _flow_switch_project(api, pid)
+                if new_pid != pid:
+                    pid = new_pid
+                    project = api.get(f"/projects/{pid}")
+                    project_name = project["name"]
             else:
                 print(f"  unknown: {choice!r}")
+        except AuthRequired:
+            print("  session expired, run: python cli.py login")
+            return
         except ApiError as e:
             print(f"  error: {e}")
             input("press Enter...")
@@ -406,8 +564,17 @@ def interactive(api: Api, pid: int,
 
 def _oneshot(api: Api, argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="task-planner")
-    parser.add_argument("--project", "-p", type=int, default=1)
+    parser.add_argument("--project", "-p", type=int, default=None,
+                        help="id проекта (по умолчанию первый)")
     sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_register = sub.add_parser("register", help="создать аккаунт и войти")
+    p_register.add_argument("--user", "-u", help="username (иначе спросит)")
+    p_login = sub.add_parser("login", help="войти и сохранить сессию")
+    p_login.add_argument("--user", "-u", help="username (иначе спросит)")
+    sub.add_parser("logout", help="выйти и удалить сохранённую сессию")
+    sub.add_parser("whoami", help="показать текущего пользователя")
+    sub.add_parser("projects", help="список проектов")
 
     p_show = sub.add_parser("show")
     p_show.add_argument("--minutes-per-char", type=int, default=10)
@@ -425,49 +592,107 @@ def _oneshot(api: Api, argv: list[str]) -> int:
     sub.add_parser("tasks")
 
     args = parser.parse_args(argv)
-    pid = args.project
 
-    if args.cmd == "show":
-        tasks, schedule = _fetch_state(api, pid)
-        _print_summary(tasks, schedule, api, pid,
-                       args.minutes_per_char, args.ascii)
+    # команды, работающие без сессии
+    if args.cmd == "register":
+        try:
+            user = _auth_request(api, "/auth/register", *_ask_credentials(args.user))
+        except ApiError as e:
+            print(f"error: {e}")
+            return 1
+        _save_token(api.token)
+        print(f"signed in as {user['username']} (session saved to {SESSION_FILE})")
         return 0
 
-    if args.cmd == "tasks":
-        tasks, schedule = _fetch_state(api, pid)
-        for tid in sorted(tasks):
-            t = tasks[tid]
-            pos = (f"{schedule[tid].start:%H:%M}–{schedule[tid].end:%H:%M}"
-                   if tid in schedule else "(unscheduled)")
-            deps = ", ".join(str(d) for d in sorted(t.dependencies)) or "—"
-            print(f"[{tid}] {t.name:<16} {pos:<20} "
-                  f"{_fmt_duration(t.duration):<6} deps: {deps}")
+    if args.cmd == "login":
+        try:
+            user = _do_login(api, args.user)
+        except (ApiError, EOFError, KeyboardInterrupt):
+            print("\nerror: cannot sign in")
+            return 1
+        print(f"signed in as {user['username']} (session saved to {SESSION_FILE})")
         return 0
 
-    if args.cmd == "place":
-        start = _parse_time(args.time)
-        api.put(f"/tasks/{args.id}/schedule",
-                json={"start": start.isoformat()})
-        print(f"placed [{args.id}] at {start:%Y-%m-%d %H:%M}")
+    if args.cmd == "logout":
+        try:
+            api.post("/auth/logout")
+        except ApiError:
+            pass
+        _clear_token()
+        print("signed out")
         return 0
 
-    if args.cmd == "unplace":
-        api.delete(f"/tasks/{args.id}/schedule")
-        print(f"unplaced [{args.id}]")
+    if args.cmd == "whoami":
+        try:
+            user = api.get("/auth/me")
+        except AuthRequired:
+            print("not signed in")
+            return 1
+        except ApiError as e:
+            print(f"error: {e}")
+            return 1
+        print(user["username"])
         return 0
 
-    if args.cmd == "autofill":
-        api.post(f"/projects/{pid}/autofill")
-        print("autofilled")
-        return 0
-
-    if args.cmd == "check":
-        viols = api.get(f"/projects/{pid}/violations")
-        if not viols:
-            print("OK: no violations")
+    try:
+        if args.cmd == "projects":
+            for p in api.get("/projects"):
+                print(f"[{p['id']}] {p['name']}")
             return 0
-        for v in viols:
-            print(f"! [{v['task_id']}] {v['message']}")
+
+        if args.cmd == "place":
+            start = _parse_time(args.time)
+            api.put(f"/tasks/{args.id}/schedule",
+                    json={"start": start.isoformat()})
+            print(f"placed [{args.id}] at {start:%Y-%m-%d %H:%M}")
+            return 0
+
+        if args.cmd == "unplace":
+            api.delete(f"/tasks/{args.id}/schedule")
+            print(f"unplaced [{args.id}]")
+            return 0
+
+        resolved = _resolve_project(api, args.project)
+        if resolved is None:
+            return 1
+        pid, project_name = resolved
+
+        if args.cmd == "show":
+            tasks, schedule = _fetch_state(api, pid)
+            _print_summary(tasks, schedule, api, pid,
+                           args.minutes_per_char, args.ascii, project_name)
+            return 0
+
+        if args.cmd == "tasks":
+            tasks, schedule = _fetch_state(api, pid)
+            for tid in sorted(tasks):
+                t = tasks[tid]
+                pos = (f"{schedule[tid].start:%H:%M}–{schedule[tid].end:%H:%M}"
+                       if tid in schedule else "(unscheduled)")
+                deps = ", ".join(str(d) for d in sorted(t.dependencies)) or "—"
+                print(f"[{tid}] {t.name:<16} {pos:<20} "
+                      f"{_fmt_duration(t.duration):<6} deps: {deps}")
+            return 0
+
+        if args.cmd == "autofill":
+            api.post(f"/projects/{pid}/autofill")
+            print("autofilled")
+            return 0
+
+        if args.cmd == "check":
+            viols = api.get(f"/projects/{pid}/violations")
+            if not viols:
+                print("OK: no violations")
+                return 0
+            for v in viols:
+                print(f"! [{v['task_id']}] {v['message']}")
+            return 1
+
+    except AuthRequired:
+        print("not signed in, run: python cli.py login")
+        return 1
+    except ApiError as e:
+        print(f"error: {e}")
         return 1
 
     return 0
@@ -476,11 +701,24 @@ def _oneshot(api: Api, argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
-    api = Api(API_URL)
+    api = Api(API_URL, _load_token())
 
     if not argv:
+        if not _ensure_auth(api):
+            return 1
         try:
-            interactive(api, pid=1)
+            resolved = _resolve_project(api, None)
+        except ApiError as e:
+            print(f"error: {e}")
+            return 1
+        if resolved is None:
+            return 1
+        pid, project_name = resolved
+        try:
+            interactive(api, pid, project_name)
+        except AuthRequired:
+            print("session expired, run: python cli.py login")
+            return 1
         except ApiError as e:
             print(f"error: {e}")
             return 1

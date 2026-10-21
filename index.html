@@ -404,6 +404,53 @@
   body.dragging { cursor: grabbing; }
   body.dragging * { cursor: grabbing !important; }
 
+  /* ---------- auth ---------- */
+  .auth-screen {
+    position: fixed; inset: 0; z-index: 3000; padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  .auth-screen.hidden { display: none; }
+  .auth-card {
+    width: 340px; max-width: 100%; padding: 22px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 3px; box-shadow: var(--modal-shadow);
+  }
+  .auth-title { font-size: 18px; font-weight: 600; }
+  .auth-sub { font-size: 12px; color: var(--muted); margin: 2px 0 18px; }
+  .auth-card label {
+    display: block; margin-bottom: 12px; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .auth-card label > span { display: block; margin-bottom: 4px; }
+  .auth-card input {
+    width: 100%; font: inherit; font-size: 14px; padding: 6px 9px;
+    border: 1px solid var(--border); border-radius: 2px;
+    background: var(--input-bg); color: var(--text);
+    text-transform: none; letter-spacing: 0;
+  }
+  .auth-error {
+    color: var(--danger); font-size: 13px; min-height: 18px;
+    margin-bottom: 10px; word-break: break-word;
+  }
+  .auth-actions { display: flex; align-items: center; gap: 8px; }
+  .auth-actions button {
+    font-size: 13px; padding: 6px 14px; border-radius: 2px; height: 32px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); cursor: pointer;
+  }
+  .auth-actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .auth-actions button.primary:hover { background: var(--accent-h); }
+  .auth-actions button.link { border: none; background: transparent; color: var(--accent); }
+  .auth-actions button.link:hover { text-decoration: underline; }
+  .auth-actions button:disabled { opacity: 0.6; cursor: default; }
+
+  .toolbar .user-chip {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; padding: 0 2px;
+  }
+
   /* ---------- responsive ---------- */
   @media (max-width: 800px) {
     .toolbar { padding: 6px 10px; gap: 6px; }
@@ -427,6 +474,9 @@
   <button id="btn-undo" class="icon" title="Undo (Ctrl+Z)" disabled>&#x21B6;</button>
   <button id="btn-sidebar" class="icon" title="Toggle sidebar">&#x2630;</button>
   <button id="theme-toggle" class="icon" title="Toggle theme"></button>
+  <span class="sep" id="user-sep" hidden></span>
+  <span class="user-chip" id="user-name" hidden></span>
+  <button id="btn-logout" hidden>Log out</button>
 </div>
 
 <div class="day-bar">
@@ -462,6 +512,27 @@
   </aside>
 </div>
 
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-title">Task Planner</div>
+    <div class="auth-sub" id="auth-sub">Sign in to your account</div>
+    <form id="auth-form">
+      <label><span>Username</span>
+        <input type="text" name="username" autocomplete="username"
+               autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label><span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-actions">
+        <button type="submit" class="primary" id="auth-submit">Sign in</button>
+        <button type="button" class="link" id="auth-toggle">Create account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="modal-root"></div>
 <div id="menu-root"></div>
 
@@ -479,6 +550,7 @@ const PALETTE = [
 ];
 
 const state = {
+  user: null,
   projects: [],
   currentProject: "all",
   tasks: [],
@@ -623,13 +695,96 @@ async function api(path, init) {
                  ...(init && init.headers ? init.headers : {}) },
     });
   } catch (e) { throw new Error("Cannot reach API at " + API); }
+  if (r.status === 401 && state.user) {
+    // сессия истекла или отозвана
+    state.user = null;
+    showAuth("Session expired. Sign in again.");
+  }
   if (!r.ok) {
     let detail;
     try { detail = (await r.json()).detail; } catch (_) { detail = r.statusText; }
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    err.status = r.status;
+    throw err;
   }
   if (r.status === 204) return null;
   return r.json();
+}
+
+/* ---------- auth ---------- */
+
+let authMode = "login";
+
+function showAuth(message) {
+  const screen = document.getElementById("auth-screen");
+  if (!screen) return;
+  screen.classList.remove("hidden");
+  document.getElementById("auth-error").textContent = message || "";
+  const input = document.querySelector('#auth-form input[name="username"]');
+  if (input) setTimeout(() => input.focus(), 0);
+}
+
+function hideAuth() {
+  const screen = document.getElementById("auth-screen");
+  if (screen) screen.classList.add("hidden");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isLogin = mode === "login";
+  document.getElementById("auth-sub").textContent =
+    isLogin ? "Sign in to your account" : "Create a new account";
+  document.getElementById("auth-submit").textContent =
+    isLogin ? "Sign in" : "Create account";
+  document.getElementById("auth-toggle").textContent =
+    isLogin ? "Create account" : "Sign in";
+  document.querySelector('#auth-form input[name="password"]').autocomplete =
+    isLogin ? "current-password" : "new-password";
+  document.getElementById("auth-error").textContent = "";
+}
+
+async function submitAuth(e) {
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  const username = String(fd.get("username") || "").trim();
+  const password = String(fd.get("password") || "");
+  const btn = document.getElementById("auth-submit");
+  btn.disabled = true;
+  try {
+    state.user = await api("/auth/" + authMode, {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    form.reset();
+    hideAuth();
+    render();
+    await start();
+  } catch (err) {
+    document.getElementById("auth-error").textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function logout() {
+  try { await api("/auth/logout", { method: "POST" }); } catch (_) {}
+  state.user = null;
+  state.projects = []; state.tasks = []; state.schedule = []; state.violations = [];
+  state.currentProject = "all";
+  history.length = 0;
+  render();
+  showAuth("");
+}
+
+function showUser() {
+  const nameEl = document.getElementById("user-name");
+  const sep = document.getElementById("user-sep");
+  const btn = document.getElementById("btn-logout");
+  if (!nameEl) return;
+  const signedIn = !!state.user;
+  [nameEl, sep, btn].forEach(el => { el.hidden = !signedIn; });
+  if (signedIn) nameEl.textContent = state.user.username;
 }
 
 async function loadAll() {
@@ -763,6 +918,7 @@ function render() {
   renderTimeline();
   renderUnscheduled();
   renderStatus();
+  showUser();
   updateZoomLabel();
 }
 
@@ -1649,7 +1805,18 @@ function gotoToday() {
 
 /* ---------- init ---------- */
 
-async function init() {
+let appStarted = false;
+
+async function start() {
+  if (!appStarted) {
+    appStarted = true;
+    initUi();
+  }
+  await reload();
+  updateUndoBtn();
+}
+
+function initUi() {
   initSidebar();
 
   document.getElementById("project-select").addEventListener("change", (e) => {
@@ -1725,12 +1892,27 @@ async function init() {
   });
 
   window.addEventListener("resize", () => renderTimeline());
-
-  await reload();
-  updateUndoBtn();
 }
 
-init();
+async function boot() {
+  document.getElementById("auth-form").addEventListener("submit", submitAuth);
+  document.getElementById("auth-toggle").addEventListener("click", () => {
+    setAuthMode(authMode === "login" ? "register" : "login");
+  });
+  document.getElementById("btn-logout").addEventListener("click", logout);
+  setAuthMode("login");
+
+  try {
+    state.user = await api("/auth/me");
+  } catch (err) {
+    showAuth(err.status === 401 ? "" : err.message);
+    return;
+  }
+  hideAuth();
+  await start();
+}
+
+boot();
 </script>
 </body>
 </html>

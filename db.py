@@ -1,4 +1,8 @@
-"""PostgreSQL-хранилище. Только SQL, никакой доменной логики."""
+"""PostgreSQL-хранилище. Только SQL, никакой доменной логики.
+
+Все «объектные» запросы либо принимают owner_id, либо используются сервисным
+слоем после проверки владельца — фильтрация по пользователю обязательна.
+"""
 
 from __future__ import annotations
 
@@ -7,12 +11,12 @@ from datetime import datetime, timedelta
 
 import psycopg
 
-from models import ScheduledTask, Task
+from models import ScheduledTask, Task, User
 
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/task_planner",
+    "postgresql://taskmanager:taskmanager@localhost:5432/taskmanager",
 )
 
 
@@ -21,29 +25,111 @@ def connect() -> psycopg.Connection:
 
 
 # ---------------------------------------------------------------------------
+# users
+# ---------------------------------------------------------------------------
+
+def create_user(username: str, password_hash: str) -> User:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO users (username, password_hash) VALUES (%s, %s) "
+            "RETURNING id",
+            (username, password_hash),
+        )
+        return User(cur.fetchone()[0], username)
+
+
+def get_user(uid: int) -> User | None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, username FROM users WHERE id = %s", (uid,))
+        row = cur.fetchone()
+        return User(row[0], row[1]) if row else None
+
+
+def get_user_credentials(username: str) -> tuple[User, str] | None:
+    """(пользователь, password_hash) по логину без учёта регистра."""
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, username, password_hash FROM users "
+            "WHERE lower(username) = lower(%s)",
+            (username,),
+        )
+        row = cur.fetchone()
+        return (User(row[0], row[1]), row[2]) if row else None
+
+
+# ---------------------------------------------------------------------------
+# sessions
+# ---------------------------------------------------------------------------
+
+def create_session(token_hash: str, uid: int, expires_at: datetime) -> None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO sessions (token_hash, user_id, expires_at) "
+            "VALUES (%s, %s, %s)",
+            (token_hash, uid, expires_at),
+        )
+
+
+def get_session_user(token_hash: str) -> User | None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT u.id, u.username
+            FROM sessions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.token_hash = %s AND s.expires_at > now()
+            """,
+            (token_hash,),
+        )
+        row = cur.fetchone()
+        return User(row[0], row[1]) if row else None
+
+
+def delete_session(token_hash: str) -> None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM sessions WHERE token_hash = %s", (token_hash,))
+
+
+def delete_expired_sessions() -> None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM sessions WHERE expires_at <= now()")
+
+
+# ---------------------------------------------------------------------------
 # projects
 # ---------------------------------------------------------------------------
 
-def list_projects() -> list[tuple[int, str]]:
+def list_projects(owner_id: int) -> list[tuple[int, str]]:
     with connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT id, name FROM projects ORDER BY id")
+        cur.execute(
+            "SELECT id, name FROM projects WHERE owner_id = %s ORDER BY id",
+            (owner_id,),
+        )
         return list(cur.fetchall())
 
 
-def get_project(pid: int) -> tuple[int, str] | None:
+def get_project(pid: int, owner_id: int) -> tuple[int, str] | None:
     with connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT id, name FROM projects WHERE id = %s", (pid,))
+        cur.execute(
+            "SELECT id, name FROM projects WHERE id = %s AND owner_id = %s",
+            (pid, owner_id),
+        )
         row = cur.fetchone()
         return tuple(row) if row else None
 
 
-def create_project(name: str) -> int:
+def create_project(name: str, owner_id: int) -> int:
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO projects (name) VALUES (%s) RETURNING id",
-            (name,),
+            "INSERT INTO projects (name, owner_id) VALUES (%s, %s) RETURNING id",
+            (name, owner_id),
         )
         return cur.fetchone()[0]
+
+
+def update_project(pid: int, name: str) -> None:
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE projects SET name = %s WHERE id = %s", (name, pid))
 
 
 def delete_project(pid: int) -> None:
@@ -88,6 +174,32 @@ def get_task(tid: int) -> Task | None:
             "SELECT id, name, earliest_start, duration, deadline "
             "FROM tasks WHERE id = %s",
             (tid,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        tid, name, earliest, duration, deadline = row
+
+        cur.execute(
+            "SELECT depends_on FROM dependencies WHERE task_id = %s",
+            (tid,),
+        )
+        deps = {r[0] for r in cur.fetchall()}
+
+    return Task(tid, name, earliest, duration, deadline, deps)
+
+
+def get_task_owned(tid: int, owner_id: int) -> Task | None:
+    """Задача глазами владельца: чужие задачи неотличимы от несуществующих."""
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.id, t.name, t.earliest_start, t.duration, t.deadline
+            FROM tasks t
+            JOIN projects p ON p.id = t.project_id
+            WHERE t.id = %s AND p.owner_id = %s
+            """,
+            (tid, owner_id),
         )
         row = cur.fetchone()
         if not row:
@@ -215,7 +327,3 @@ def set_start(tid: int, start: datetime) -> None:
 def unset_start(tid: int) -> None:
     with connect() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM schedule WHERE task_id = %s", (tid,))
-
-def update_project(pid: int, name: str) -> None:
-    with connect() as conn, conn.cursor() as cur:
-        cur.execute("UPDATE projects SET name = %s WHERE id = %s", (name, pid))
